@@ -78,38 +78,41 @@ if (is_longterm) {
 }
 
 # 2. LOAD DATA -------------------------------------------------------------------------------
-setwd("~/Lavori/MPA_timeseries/Modskurt")
+# paths via config.R (run with the working directory set to the project root)
+source("config.R")
+outdir <- file.path(dir_results, "Fig4_counterfactual")
+if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
 
 # ── Shared files (always needed regardless of data_kind) ------------------
-load("reef_fish_sti_glorys.RData")
-load("fish.traits.dat.RData")
-load("temperature_all_sites.RData")
-load("sp.optim.abund.shift.RData")     # unimodal_filter_helper needs it for ECOREGION_ID mapping
+load(input_file("reef_fish_sti_glorys.RData"))
+load(input_file("fish.traits.dat.RData"))
+load(input_file("temperature_all_sites.RData"))
+load(input_file("sp.optim.abund.shift.RData"))     # unimodal_filter_helper needs it for ECOREGION_ID mapping
 
 # ── Core files — switch on data_kind ------------------------------------------
 if (data_kind == "abund") {
   # Realised panels + leadtime (sp.optim.abund.shift already loaded above)
-  load("sp.optim.abund.shift.leadtime.RData")
-  load("optim.abund.trend.RData")
+  load(input_file("sp.optim.abund.shift.leadtime.RData"))
+  load(input_file("optim.abund.trend.RData"))
   # Long-term reference panels
-  load("sp.optim.abund.firstsite.longterm.RData")
-  load("sp.optim.abund.previoussite.longterm.RData")
-  load("optim.abund.firstsite.trend.longterm.RData")
-  load("optim.abund.previoussite.trend.longterm.RData")
+  load(input_file("sp.optim.abund.firstsite.longterm.RData"))
+  load(input_file("sp.optim.abund.previoussite.longterm.RData"))
+  load(input_file("optim.abund.firstsite.trend.longterm.RData"))
+  load(input_file("optim.abund.previoussite.trend.longterm.RData"))
 } else {
   # Realised panels + leadtime (density equivalents)
-  load("sp.optim.density.shift.RData")
-  load("sp.optim.density.shift.leadtime.RData")
-  load("optim.density.trend.RData")
+  load(input_file("sp.optim.density.shift.RData"))
+  load(input_file("sp.optim.density.shift.leadtime.RData"))
+  load(input_file("optim.density.trend.RData"))
   # Long-term reference panels (density equivalents)
-  load("sp.optim.density.firstsite.longterm.RData")
-  load("sp.optim.density.previoussite.longterm.RData")
-  load("optim.density.firstsite.trend.longterm.RData")
-  load("optim.density.previoussite.trend.longterm.RData")
+  load(input_file("sp.optim.density.firstsite.longterm.RData"))
+  load(input_file("sp.optim.density.previoussite.longterm.RData"))
+  load(input_file("optim.density.firstsite.trend.longterm.RData"))
+  load(input_file("optim.density.previoussite.trend.longterm.RData"))
 }
 
 # ---- Scenario classification file ---------------------------------------------------------------
-load(paste0(SCENARIO, ".RData"))
+load(input_file(paste0(SCENARIO, ".RData")))
 
 # 3. SCENARIO ALIASES (derived from SCENARIO + flags above)
 # Use rename(any_of(...)) so only columns actually present get renamed —
@@ -399,7 +402,7 @@ trends_df <- lat_trends |>
         relocate(c(Lat.mod.parms,Env.mod.parms,SlopeDev.mod.parms,SlopeRef.mod.parms), .after="RANGE")
 
 #save(trends_df, file="trends_df.RData")
-#load("trends_df.RData")  
+#load(input_file("trends_df.RData"))  
 
 # PLOTS
 resp_order <- c(
@@ -572,7 +575,7 @@ p_rg_all <- ggplot(props_rg, aes(x = RANGE, y = Perc, fill = Response)) +
     strip.text = element_text(size=12, face = "bold"))
 
 p_rg_all
-# ggsave(sprintf("~/Lavori/MPA_timeseries/Modskurt/Figs/Fig4a_counterfactual_range_guild_%s.pdf", fig_key),
+# ggsave(file.path(outdir, sprintf("Fig4a_counterfactual_range_guild_%s.pdf", fig_key)),
 #   p_rg_all, width = 7, height = 4)
 
 # ==========================================================================================================
@@ -592,13 +595,8 @@ p_rg_all
 BEST_KIND <- data_kind                                    # data kind + reference site for the best-path load
 BEST_REF  <- if (is_prevsite) "previoussite" else "firstsite"
 USE_OPTIMUM <- TRUE                                        # TRUE = DP global optimum (primary); FALSE = greedy twin
-bp_dir  <- if (USE_OPTIMUM) "bestpath_optimum" else "bestpath"
 bp_stem <- if (USE_OPTIMUM) "bestpath.opt" else "bestpath"
-bp_file <- path.expand(sprintf("~/Lavori/MPA_timeseries/Modskurt/%s/%s.%s.%s.RData",
-                               bp_dir, bp_stem, BEST_KIND, BEST_REF))
-if (!file.exists(bp_file))                                # fallback: flat Modskurt/ (no subfolder)
-  bp_file <- path.expand(sprintf("~/Lavori/MPA_timeseries/Modskurt/%s.%s.%s.RData",
-                                 bp_stem, BEST_KIND, BEST_REF))
+bp_file <- input_file(sprintf("%s.%s.%s.RData", bp_stem, BEST_KIND, BEST_REF))
 BP_ALPHA <- 0.05
 bp <- get(load(bp_file)[1]) |> filter(is.na(drop_reason), resolvable)
 cat(sprintf("[bestpath] %s.%s: %d classifiable pops | %d refugia\n",
@@ -663,7 +661,7 @@ p_track <- ggplot(bars, aes(RANGE, pct, fill = outcome)) +
     strip.text = element_text(size=12, face = "bold"))
     
 plot(p_track)
-# ggsave(sprintf("~/Lavori/MPA_timeseries/Modskurt/Figs/Fig4b_available_path_use_%s.pdf", fig_key),
+# ggsave(file.path(outdir, sprintf("Fig4b_available_path_use_%s.pdf", fig_key)),
 #   p_track, width = 7, height = 4)
 
 # ==========================================================================================================
@@ -729,7 +727,7 @@ p_ecoreg <- ggplot(eco_props, aes(x = Perc, y = Eco_label, fill = Response)) +
 
 print(p_ecoreg)
 
-# ggsave(sprintf("~/Lavori/MPA_timeseries/Modskurt/Figs/FigS_Fig4a_counterfactual_by_ecoregion_%s.pdf", fig_key),
+# ggsave(file.path(outdir, sprintf("FigS_Fig4a_counterfactual_by_ecoregion_%s.pdf", fig_key)),
 #   p_ecoreg, width = 9, height = 10)
 
 # ==========================================================================================================
@@ -763,7 +761,7 @@ p_ecoreg_track <- ggplot(eco_track, aes(Perc, Eco_label, fill = outcome)) +
   theme(panel.grid = element_blank(), legend.position = "bottom", legend.text = element_text(size = 8))
 
 plot(p_ecoreg_track)
-# ggsave(sprintf("~/Lavori/MPA_timeseries/Modskurt/Figs/FigS_Fig4b_by_ecoregion_%s.pdf", fig_key), p_ecoreg_track, width = 7, height = 8)
+# ggsave(file.path(outdir, sprintf("FigS_Fig4b_by_ecoregion_%s.pdf", fig_key)), p_ecoreg_track, width = 7, height = 8)
 
 # ==========================================================================================================
 # SUPPLEMENTARY — STI adaptation / thermal-tolerance hypothesis (falsification)
@@ -805,7 +803,7 @@ print(dplyr::bind_rows(sti_pool(sti_test, "All (pooled)"),
   sti_pool(dplyr::filter(sti_test, THERMAL.GUILD=="Temperate"), "Temperate")), row.names = FALSE)
 cat("facet-controlled lm  STI ~ grp + guild*range  (grpMitigate > 0 => mitigators warmer-adapted, OPPOSITE to tolerance):\n")
 print(round(summary(lm(STI ~ grp + THERMAL.GUILD*RANGE, data = sti_test))$coefficients["grpMitigate", , drop=FALSE], 4))
-# write.csv(sti_grid, "~/Lavori/MPA_timeseries/Modskurt/Tables/TableS_STI_tolerance.csv", row.names = FALSE)
+# write.csv(sti_grid, file.path(outdir, "TableS_STI_tolerance.csv"), row.names = FALSE)
 
 # supplementary figure: overlapping STI densities per guild x range class + group medians (CockR colours)
 col_mit <- unname(taster_palettes_continuous()[["Blue Angel_continuous"]][156])     # Mitigate      (buffer/cool)
@@ -831,7 +829,7 @@ p_sti_tol <- ggplot(sti_test, aes(STI, fill = grp, colour = grp)) +
   theme(panel.grid.minor = element_blank(), strip.background = element_blank(),
         strip.text = element_text(face = "bold"), legend.position = "bottom")
 print(p_sti_tol)
-# ggsave(sprintf("~/Lavori/MPA_timeseries/Modskurt/Figs/FigS_STI_tolerance_%s.pdf", fig_key),
+# ggsave(file.path(outdir, sprintf("FigS_STI_tolerance_%s.pdf", fig_key)),
 #        p_sti_tol, width = 9, height = 5.5, device = cairo_pdf)
 
 # ==========================================================================================================
@@ -848,7 +846,7 @@ print(p_sti_tol)
 # NB: modskurt.optim.<kind>.unimodal.RData must be materialised locally to load — if it errors
 # with "cannot open compressed file ... Invalid argument", it is online-only on this machine:
 # right-click it in Google Drive -> "Available offline" (or run this section on the work computer).
-opt_hmax <- get(load(sprintf("modskurt.optim.%s.unimodal.RData", data_kind))[1])
+opt_hmax <- get(load(input_file(sprintf("modskurt.optim.%s.unimodal.RData", data_kind)))[1])
 stopifnot("H.LAT" %in% names(opt_hmax))
 hd <- opt_hmax |>
   dplyr::transmute(pop_id = interaction(ECOREGION, SPECIES, drop = TRUE), YEAR, Hmax = H.LAT) |>
@@ -906,17 +904,4 @@ p_hmax <- ggplot() +
                           pct_signeg, pct_sigpos)) +
   theme_bw(base_size = 11) + theme(panel.grid.minor = element_blank(), legend.position = "bottom")
 plot(p_hmax)
-# ggsave(sprintf("~/Lavori/MPA_timeseries/Modskurt/Figs/FigS_Hmax_trend_%s.pdf", fig_key), p_hmax, width = 6, height = 4.5)
-
-# Alternative view — distribution of per-population trends; significant decline red, increase blue.
-p_slopes <- ggplot(popfit, aes(b, fill = trend)) +
-  geom_histogram(bins = 60, colour = NA) +
-  geom_vline(xintercept = 0, linetype = 2, colour = "grey40") +
-  scale_fill_manual(values = trend_pal, name = NULL) +
-  coord_cartesian(xlim = quantile(popfit$b, c(.005, .995), na.rm = TRUE)) +
-  labs(x = "Per-population trend in log peak modal abundance  (yr⁻¹)", y = "Populations",
-       subtitle = sprintf("significantly negative %.0f%%, significantly positive %.0f%% (p < 0.05)",
-                          pct_signeg, pct_sigpos)) +
-  theme_bw(base_size = 11) + theme(panel.grid.minor = element_blank(), legend.position = "bottom")
-plot(p_slopes)
-# ggsave(sprintf("~/Lavori/MPA_timeseries/Modskurt/Figs/FigS_Hmax_slopes_%s.pdf", fig_key), p_slopes, width = 6, height = 4)
+# ggsave(file.path(outdir, sprintf("FigS_Hmax_trend_%s.pdf", fig_key)), p_hmax, width = 6, height = 4.5)

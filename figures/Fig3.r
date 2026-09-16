@@ -32,7 +32,8 @@ require(cluster)   # daisy()
 require(ape)       # pcoa()
 require(vegan)     # envfit()
 
-setwd("~/Lavori/MPA_timeseries/Modskurt")
+# paths via config.R (run with the working directory set to the project root)
+source("config.R")
 
 # ---- INPUT SWITCH ------------------------------------------------------------
 # DATA.KIND : "abund" | "density". prev_exposure = the exposure realized at the
@@ -42,10 +43,10 @@ DATA.KIND  <- "abund"     # "abund" | "density"
 LAG        <- 1L          # 1 | 2 — exposure lag (years) used as predictor + step length
 stopifnot(DATA.KIND %in% c("abund", "density"), LAG %in% c(1L, 2L))
 
-load("reef_fish_sti_glorys.RData")            # THERMAL.GUILD + RANGE classification
-load("fish.traits.dat.RData")                 # (abandoned trait supplement only)
+load(input_file("reef_fish_sti_glorys.RData"))   # THERMAL.GUILD + RANGE classification
+load(input_file("fish.traits.dat.RData"))        # (abandoned trait supplement only)
 
-load_obj <- function(f) { e <- new.env(); get(load(f, envir = e)[1], envir = e) }
+load_obj <- function(f) { e <- new.env(); get(load(input_file(f), envir = e)[1], envir = e) }
 to_eco <- function(d) {
   if ("ORIG.ECOREGION" %in% names(d)) dplyr::rename(d, ECOREGION = ORIG.ECOREGION) else d
 }
@@ -253,9 +254,11 @@ plot.h2.bin.q <- ggplot() +
         strip.text = element_text(face = "bold"))
 
 plot(plot.h2.bin.q)
-save.path <- file.path(paste0("~/Lavori/MPA_timeseries/Modskurt/Figs/",
-                "poleward_shift_binary_quadratic_", DATA.KIND,
-                if (LAG == 2L) "_lag2" else "", ".pdf"))
+outdir <- file.path(dir_results, "Fig3_poleward")
+if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
+save.path <- file.path(outdir,
+                paste0("poleward_shift_binary_quadratic_", DATA.KIND,
+                       if (LAG == 2L) "_lag2" else "", ".pdf"))
 #ggsave(save.path, plot.h2.bin.q, width = 6, height = 5)
 
 

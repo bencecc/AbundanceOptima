@@ -38,7 +38,8 @@ library(CockR)
 # ==========================================================================
 # 1. LOAD DATA
 # ==========================================================================
-setwd("~/Lavori/MPA_timeseries/Modskurt")
+# paths via config.R (run with the working directory set to the project root)
+source("config.R")
 
 # ---- DATA-KIND SWITCH: set ONCE here (abundance vs density) --------------------------
 # Drives BOTH the input objects loaded below AND the output-folder/file suffix,
@@ -48,12 +49,12 @@ stopifnot(DATA_KIND %in% c("abund", "density"))
 kind_suffix <- if (DATA_KIND == "density") "density" else "abundance"   # output suffix
 
 # Movement + trend data for the chosen kind
-load(sprintf("sp.optim.%s.shift.RData", DATA_KIND))
-load(sprintf("optim.%s.trend.RData",   DATA_KIND))
+load(input_file(sprintf("sp.optim.%s.shift.RData", DATA_KIND)))
+load(input_file(sprintf("optim.%s.trend.RData",   DATA_KIND)))
 
 # load species traits and temperature affinity (kind-independent)
-load("fish.traits.dat.RData")
-load("reef_fish_sti_glorys.RData")
+load(input_file("fish.traits.dat.RData"))
+load(input_file("reef_fish_sti_glorys.RData"))
 
 # Set up data frames for analysis (both derived from DATA_KIND)
 trend.focal <- get(sprintf("optim.%s.trend", DATA_KIND)) |>
@@ -72,7 +73,7 @@ cat(sprintf("[Fig 2 legend] input set (retained, ex-Mascarene): %d populations /
             n_distinct(sp.focal$ECOREGION[!masc_eco])))
 
 # ---- MEOW shapefile ------------------------------------------------------------------
-meow <- sf::read_sf('C:/Users/LBenedettiCecchi/OneDrive - University of Pisa/Lavori/MEOWs/Marine_Ecoregions_Of_the_World__MEOW_.shp') 
+meow <- sf::read_sf(meow_shapefile)
 
 # ==========================================================================
 # 2. ECOREGION-LEVEL WARMING RATE (for polygon fill)
@@ -83,8 +84,8 @@ meow <- sf::read_sf('C:/Users/LBenedettiCecchi/OneDrive - University of Pisa/Lav
 #   * all_ecoregion_temperatures_coastal.RData  — 0 to -30 m cells only
 #   * all_ecoregion_temperatures_all.RData      — all cells inside the polygon
 
-load("temperature_all_ecoregions_coastal.RData")
-load("temperature_all_ecoregions_all.RData")
+load(input_file("temperature_all_ecoregions_coastal.RData"))
+load(input_file("temperature_all_ecoregions_all.RData"))
 
 # ==========================================================================
 # 3. ECOREGION CENTROIDS
@@ -255,7 +256,7 @@ eco_info <- eco_centroids |>
 ref_lat <- if (DATA_KIND == "abund") {
   eco_centroids |> select(ECOREGION, ref_lat = cen_lat)
 } else {
-  get(load("sp.optim.abund.shift.RData")[1]) |>
+  get(load(input_file("sp.optim.abund.shift.RData"))[1]) |>
     group_by(ORIG.ECOREGION) |>
     summarise(ref_lat = mean(SHIFTED.LAT, na.rm = TRUE), .groups = "drop") |>
     rename(ECOREGION = ORIG.ECOREGION)
@@ -339,7 +340,7 @@ direction_to_colour <- function(bearing_deg, cen_lat) {
 # 7. GENERATE INDIVIDUAL ROSE PNGs + PDFs (base R graphics)
 # ==========================================================================
 
-outdir <- file.path("~/Lavori/MPA_timeseries/Modskurt/Figs", paste0("Fig2_roses_", kind_suffix))
+outdir <- file.path(dir_results, paste0("Fig2_roses_", kind_suffix))
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 # Helper: draw one rose on the current device
@@ -591,8 +592,8 @@ focal.meow <- meow |>
 cat("focal.meow rows:", nrow(focal.meow), "\n")
 cat("Geometry types:", paste(unique(st_geometry_type(focal.meow)), collapse = ", "), "\n")
 cat("Any empty geometries:", sum(st_is_empty(focal.meow)), "\n")
-cat("warming_coastal range:",
-    paste(round(range(focal.meow$warming_coastal, na.rm = TRUE), 4), collapse = " - "), "\n")
+cat("warming_all range:",
+    paste(round(range(focal.meow$warming_all, na.rm = TRUE), 4), collapse = " - "), "\n")
 
 map.data <- ggplot() +
 		geom_sf(data = world_map, fill = "white", col = NA) +
@@ -624,7 +625,7 @@ map.data <- ggplot() +
 		coord_sf(expand = FALSE)
 
 plot(map.data)
-# ggsave(sprintf("~/Lavori/MPA_timeseries/Modskurt/Figs/Fig2_map_%s.pdf", kind_suffix),
+# ggsave(file.path(outdir, sprintf("Fig2_map_%s.pdf", kind_suffix)),
 #        map.data, width = 18, height = 9)
 
 unique(focal.meow$ECOREGION)
@@ -698,7 +699,7 @@ p.lat.dir <- ggplot(dir.props,
 		axis.title.x = element_text(size = 10))
 
 plot(p.lat.dir)
-# ggsave(p.lat.dir, filename = sprintf("~/Lavori/MPA_timeseries/Modskurt/Figs/Fig2_inset_%s.pdf", kind_suffix),
+# ggsave(p.lat.dir, filename = file.path(outdir, sprintf("Fig2_inset_%s.pdf", kind_suffix)),
   # width = 6, height = 4)
 
 # The density version of this inset (and of every panel) is produced simply by setting

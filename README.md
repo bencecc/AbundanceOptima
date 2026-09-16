@@ -25,7 +25,7 @@ Survey input spans 1992–2021; the analysed span (with GLORYS exposure) is 1993
 ## 2. Setup
 1. **Get the code (GitHub).** Clone this repository into your home dir as `~/abundance_optima`:
    ```sh
-   git clone https://github.com/<owner>/AbundanceOptima.git ~/abundance_optima
+   git clone https://github.com/bencecc/AbundanceOptima.git ~/abundance_optima
    ```
    (or download the ZIP from the repo's green **Code** button and unzip it to that path). That
    gives you `config.R`, `analysis/`, `figures/`, `tables/` and `packages/` — the `data/`,
@@ -86,7 +86,7 @@ Save convention: a script writes into its **own named subfolder under `results/`
 | 2 | Site & ecoregion subsurface temperature | `all_sites_temperature.R`, `all_ecoregions_temperature.R` (+ their `.sh` + `.txt`) | HPC session | **GLORYS + MEOW** | → `temperature_all_sites`, `temperature_all_ecoregions` |
 | 3 | Species Temperature Index (STI) — *transparency only* | `fish_env_distr_run.R`, `fish_env_distr.R`, `worms_validate.R` (+ `.sh` + `sti_indices.txt`) | HPC session | **GLORYS** | `fish.occ.df` + `fish_names` → `reef_fish_sti_glorys` — **provided; scripts query live OBIS/WoRMS/FishBase, will not reproduce it exactly** |
 | 4 | Barrier identification & ecoregion split (Bassian, Hawaii) | `cluster_ecoregions.R` | single session | **GEBCO** | site coords + GEBCO → `split_plan.RData` (Bassian → `_W/_E/_NW`, Hawaii → `_SE/_NW`) |
-| 5 | modskurt optima (lat & lon; abund & density) — **each split group fitted separately** | `modskurt_analysis.R` (+ `modskurt_flow.R`, pkg `modskurt1`) | HPC session | no | `sp.df` + `split_plan` → `modskurt.optim.*` |
+| 5 | modskurt optima (lat & lon; abund & density) — **each split group fitted separately** | `modskurt_analysis.R` (+ `modskurt1.sh` + `spID_Bassian_Hawaii_Split.txt`; uses pkg `modskurt1`) | HPC session | no | `sp.df` + `split_plan` → `modskurt.optim.*` |
 | 6 | Unimodal-fit QC filter | `unimodal_fit_check.R`, `unimodal_filter_helper.R` | single session | no | `modskurt.optim.*` → `…unimodal` |
 | 7 | Relocation (SEA-PATH) | `replace_to_bathy_seapath.R` (via `cluster_summaries.R`) | single session | **GEBCO** | → `optim.*.relocated` |
 | 8 | Shift + leadtime + long-term panels | `sp_optimloc_shift(.lead_time).R`, `…longterm_ref_build.R` | HPC session | no | → `sp.optim.*.shift(.leadtime/.longterm)` |
