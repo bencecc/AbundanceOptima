@@ -1,4 +1,4 @@
-# AbundanceOptima — code to reproduce *[paper title]*
+# AbundanceOptima — code to reproduce *Geographic constraints and unused opportunities limit climate tracking by reef-fish abundance optima*
 
 Reproduces the analyses, figures and tables in *[authors, year, journal]* on climate
 tracking by reef-fish abundance optima. Optima are estimated with a Bayesian *modskurt*
