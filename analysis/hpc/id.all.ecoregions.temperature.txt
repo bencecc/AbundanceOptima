@@ -1,0 +1,6 @@
+1	5	stats.sif
+6	10	stats.sif
+11	15	stats.sif
+16	20	stats.sif
+21	25	stats.sif
+26	31	stats.sif

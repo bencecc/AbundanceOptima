@@ -1,0 +1,223 @@
+#### ---- Analysis of changes in species abundance optima using the modksurt approach within ecoregions. -------- ####
+#### ---- This functions parallelizes the reapeated fits of the different models across ecoregions. ------------- ####
+#### ---- The input is a species ID number such that each node analyzes one species at the time. ---------------- ####
+require(dplyr)
+require(bayesplot)
+require(ggplot2)
+require(cmdstanr)
+require(modskurt1)
+
+require(foreach, quietly=T)
+require(doMC, quietly=T)
+registerDoMC(cores=5)
+
+# load data
+load("/home/lisandro/Lavori/MPA_timeseries/Modskurt/sp.df.RData")
+
+# ---- Apply cluster sub-regions from split_plan (replaces the old Bassian LON split) ----
+# split_plan (from cluster_ecoregions.R) flags which ecoregions are split and maps each
+# site to its group. For every split ecoregion (Bassian + Hawaii now, others in future) the
+# sub-group suffix (directional: _W/_E/_NW) goes on SPECIES ("X" -> "X_W"), ECOREGION KEEPS
+# its base name, and the clean name is stored in SPECIES.ORIG. Each suffixed SPECIES is then
+# fit as its own population, so the OUTPUT already has ECOREGION="Bassian", SPECIES="X_W",
+# SPECIES.ORIG="X" — no downstream
+# relabelling needed.
+load("/home/lisandro/Lavori/MPA_timeseries/Modskurt/split_plan.RData")
+
+# Select parameters
+resp.var <- 'abund'
+# save data for later plotting?
+save.plot.data <- TRUE 
+# plot the results as they are generated?
+plot <- FALSE
+# set the minumum number of years in a timeseries to proceed
+nyrs <- 4
+
+# RUN SCOPE (keeps the original "all or a subset of ecoregions" flexibility):
+#   run_ecoregions <- NULL          -> ALL ecoregions (full re-run; splits auto-applied).
+#   run_ecoregions <- c("Bassian")  -> only these BASE ecoregions (re-fit just what split).
+run_ecoregions <- c("Bassian", "Hawaii") # NULL for all ecoregions
+
+if (!is.null(run_ecoregions)) sp.df <- sp.df |> filter(ECOREGION %in% run_ecoregions)
+
+split_ecos <- unique(split_plan$ecoreg$ECOREGION[split_plan$ecoreg$n_groups > 1])
+ckey <- function(lon, lat) paste(round(lon, 4), round(lat, 4))
+plan_sites <- split_plan$sites |> mutate(coord_key = ckey(LON, LAT)) |>
+		dplyr::select(ECOREGION, coord_key, group, suffix)     # suffix = directional label (_W/_E/_NW)
+sp.df <- sp.df |>
+		mutate(coord_key = ckey(LON, LAT)) |>
+		left_join(plan_sites, by = c("ECOREGION", "coord_key")) |>
+		mutate(SPECIES.ORIG = SPECIES,                                  # clean name for trait/STI joins
+		       SPECIES = ifelse(ECOREGION %in% split_ecos & !is.na(group),
+						paste0(SPECIES, "_", suffix), SPECIES)) |>      # e.g. "X_W"; ECOREGION unchanged
+		dplyr::select(-coord_key, -group, -suffix)
+
+# Output folders: SINGLE fixed names (as in modskurt_analysis_old). Every species'
+# files go into ONE optim folder + ONE plot folder; the ecoregion is encoded in the
+# filename (_ecoreg_<i>_), not as a folder. RENAME these manually after each run
+# (e.g. -> ModskurtOptimEcoreg_Abund / _Density) so abund and density don't collide,
+# since both runs write to the same fixed folder.
+modskurt_dir <- "/home/lisandro/Lavori/MPA_timeseries/Modskurt"
+out_optim <- file.path(modskurt_dir, "ModskurtOptimEcoreg")
+out_plot  <- file.path(modskurt_dir, "ModskurtOptimEcoregPlot")
+                   
+species.id <- sp.df |> distinct(SPECIES) 
+
+# generate and set output directory (per sub-region; see out_optim/out_plot above)
+if(!dir.exists(out_optim)) dir.create(out_optim, recursive = TRUE)
+if(!dir.exists(out_plot))  dir.create(out_plot,  recursive = TRUE)
+
+stan_path <- system.file("stan", "modskurt1.stan", package = "modskurt1")
+mod <- cmdstanr::cmdstan_model(stan_path)
+#mod <- cmdstan_model(stan_path, compile = FALSE)
+#mod$compile(dir = "/tmp")
+
+args <- commandArgs(trailingOnly = TRUE)
+sp.id <- as.numeric(args[1])
+
+sp.name <- species.id$SPECIES[sp.id]
+cat(sp.name)
+
+if(resp.var=="density") {
+	
+	sp.df <- sp.df |>
+			mutate(density=abund/SAMPLED_AREA)
+
+}
+
+test.dat <- sp.df |> filter(SPECIES%in%species.id$SPECIES[sp.id])
+
+# Ecoregions
+ecoreg <- unique(test.dat$ECOREGION)
+
+sp.optim.res <- foreach(i=1:length(ecoreg), .combine="rbind") %do% {
+	
+	sp.ecoreg <- test.dat |> filter(ECOREGION%in%ecoreg[i])
+	
+	yr.df <- sp.ecoreg |> group_by(YEAR) |>
+			summarise(n=n(), .groups="drop")
+	
+	unique.sp <- unique(sp.ecoreg$SPECIES)
+	
+	latlon.range <- sp.df |> filter(SPECIES%in%unique.sp) |>
+			reframe(max.lat=max(LAT), min.lat=min(LAT),
+					max.lon=max(LON), min.lon=min(LON))
+	max.resp <- sp.df |> filter(SPECIES%in%unique.sp) |>
+			reframe(max.resp=max(!!sym(resp.var)))
+	
+	if(!is.null(yr.df)) {
+		
+		mod.res <- foreach(j=1:nrow(yr.df), .combine="rbind") %dopar% {
+			
+			cat('Doing YEAR ', j, ' of ', nrow(yr.df),
+					' for SPECIES ', i, ' of ', length(sp.id), '\n', sep = '')
+			
+			# proceed if there are at least n (>1 or >4) years
+			yrs.check <- yr.df[j,"n"]
+			
+			if(yrs.check$n>nyrs) {
+				
+				yr <- yr.df[j, "YEAR"]
+				sub.df <- sp.ecoreg |> filter(YEAR%in%yr$YEAR)
+				
+				# check for non-zeros abundances
+				perc.not.zeros <- nrow(sub.df |> filter(!!sym(resp.var)>0))/nrow(sub.df)					
+				
+				# proceed if there are at least 5 sites and
+				# the percentage of non-zero values is > 0
+				if(nrow(sub.df)>4&perc.not.zeros>0) {						
+					
+					sub.test.dat <- as.data.frame(sub.df)
+										
+					mod.lat <- modskurt_flow(df=sub.test.dat, resp.var=resp.var,
+							pred.var='LAT', mod=mod, latlon.range=latlon.range,
+							max.resp=max.resp, plot.res=plot, custom.dist=NULL) 
+					
+					mod.lon <- modskurt_flow(df=sub.test.dat, resp.var=resp.var,
+							pred.var='LON', mod=mod, latlon.range=latlon.range,
+							max.resp=max.resp, plot.res=plot, custom.dist=NULL) 
+					
+					if(!is.null(mod.lat)&!is.null(mod.lon)) {
+						
+						mod.comb <- mod.lat[[1]] |>
+								left_join(mod.lon[[1]][1,c("SPECIES","H.LON","m.LON","SELECTED_MODEL_LON")],
+										by="SPECIES") |>
+								relocate(c("H.LON","m.LON"), .after=m.LAT) |>
+								relocate("SELECTED_MODEL_LON", .after=SELECTED_MODEL_LAT)
+						
+						if(save.plot.data==TRUE) {
+							
+							# save LAT summary data for plotting
+							lat.df <- mod.lat[[2]]
+							plot.lat.name <- file.path(out_plot,
+									paste(gsub(" ", ".", sp.name), "_ecoreg_", i, "_", yr$YEAR, "_LAT.RData", sep=""))
+							save(lat.df, file=plot.lat.name)
+							
+							# save LON summary data for plotting
+							lon.df <- mod.lon[[2]]
+							plot.lon.name <- file.path(out_plot,
+									paste(gsub(" ", ".", sp.name), "_ecoreg_", i, "_", yr$YEAR, "_LON.RData", sep=""))
+							save(lon.df, file=plot.lon.name)
+							
+						}
+						
+						# return model output
+						return(mod.comb)
+						
+					} else if (!is.null(mod.lat)&is.null(mod.lon)) {
+						
+						if(save.plot.data==TRUE) {
+							
+							# save LAT summary data for plotting
+							lat.df <- mod.lat[[2]]
+							
+							plot.lat.name <- file.path(out_plot,
+									paste(gsub(" ", ".", sp.name), "_ecoreg_", i, "_", yr$YEAR, "_LAT.RData", sep=""))
+							save(lat.df, file=plot.lat.name)
+							
+						}
+						# return model output
+						return(mod.lat)
+						
+					} else if (is.null(mod.lat)&!is.null(mod.lon)) {
+						
+						if(save.plot.data==TRUE) {
+							
+							# save LON summary data for plotting
+							lon.df <- mod.lon[[2]]
+							plot.lon.name <- file.path(out_plot,
+									paste(gsub(" ", ".", sp.name), "_ecoreg_", i, "_", yr$YEAR, "_LON.RData", sep=""))
+							save(lon.df, file=plot.lon.name)
+							
+						}
+						
+						# return model output
+						return(mod.lon)
+						
+					} else (NULL)
+					
+				}
+				
+			} 
+			
+		}
+		
+	}	
+	
+	if(!is.null(mod.res)) mod.res |> tidyr::drop_na(m.LAT)
+}	
+
+if(!is.null(sp.optim.res)) {
+
+	# carry the clean species name (constant for this sp.id) so the output has
+	# ECOREGION=base, SPECIES=suffixed, SPECIES.ORIG=clean
+	sp.optim.res$SPECIES.ORIG <- test.dat$SPECIES.ORIG[1]
+
+	outputName=paste(sp.name, ".RData", sep="")
+	outputPath=file.path(out_optim, outputName)
+	assign(paste(sp.name), value=sp.optim.res, pos=1, inherits=T)
+	save(list=paste(sp.name), file=outputPath)
+
+}
+
+

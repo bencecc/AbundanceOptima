@@ -1,0 +1,16 @@
+# Version control the CODE only (config.R, README.md, and scripts in
+# analysis/, figures/, tables/, packages/). Inputs and generated outputs stay out:
+#   data/    inputs (Zenodo) + large GLORYS/GEBCO grids
+#   output/  intermediate .RData generated along the pipeline
+#   results/ final figures & tables (each script's own subfolder)
+# NOTE: .gitignore has no trailing comments -- patterns must stand alone.
+
+data/*
+output/*
+results/*
+!**/.gitkeep
+
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
