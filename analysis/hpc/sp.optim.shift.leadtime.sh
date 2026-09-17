@@ -17,8 +17,8 @@ JOB=`sbatch << EOF
 #SBATCH --ntasks-per-node=20
 #SBATCH --cpus-per-task=1
 
-#echo "apptainer exec --bind ${HOME}:${HOME} ${my_container}/stats.sif Rscript ${my_scripts}/all_sites_temperature.R ${P1} ${P2}" 
-apptainer exec --bind ${HOME}:${HOME} ${my_container}/stats.sif Rscript ${my_scripts}/all_sites_temperature.R ${P1} ${P2} 
+#echo "apptainer exec --bind ${HOME}:${HOME} ${my_container}/stats.sif Rscript ${my_scripts}/sp_optimloc_ecoreg_shift_lead_time.R ${P1} ${P2}" 
+apptainer exec --bind ${HOME}:${HOME} ${my_container}/stats.sif Rscript ${my_scripts}/sp_optimloc_ecoreg_shift_lead_time.R ${P1} ${P2} 
 
 EOF
 `
@@ -26,4 +26,4 @@ echo "JobID = ${JOB} for parameters: ${P1} ${P2}"
 #submitted on `date`"
 #echo SLURM_JOB_NODELIST is $SLURM_JOB_NODELIST
 
-done < ${my_indices}/id.all.sites.temperature.txt
+done < ${my_indices}/id.optim.abund.relocated.leadtime.txt

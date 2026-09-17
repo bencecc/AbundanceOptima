@@ -81,8 +81,8 @@ meow <- sf::read_sf(meow_shapefile)
 # Warming rates come from the HPC script all_ecoregions_temperature.R,
 # which fits a per-cell OLS slope of annual mean SST (1993-2021) from GLORYS and
 # aggregates to ecoregion. Two outputs are available:
-#   * all_ecoregion_temperatures_coastal.RData  — 0 to -30 m cells only
-#   * all_ecoregion_temperatures_all.RData      — all cells inside the polygon
+#   * temperature_all_ecoregions_coastal.RData  — 0 to -30 m cells only
+#   * temperature_all_ecoregions_all.RData      — all cells inside the polygon
 
 load(input_file("temperature_all_ecoregions_coastal.RData"))
 load(input_file("temperature_all_ecoregions_all.RData"))

@@ -67,7 +67,7 @@ Switch(es) that select each output. (Same information as each script's own
     because panel a reuses this script's counterfactual `Response`): 8a STI-tolerance
     falsification (+ STI table), 8b depth-emigration proxy (self-contained).
 - Switch: `SCENARIO` (kind abund/density × ref first/previous site × short/long
-  term); `USE_OPTIMUM` (DP vs greedy).
+  term).
 
 ## Running a figure and its ED variant
 

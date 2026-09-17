@@ -1,9 +1,9 @@
 #!/usr/bin/bash
 
-my_container=/home/lisandro/containers/
-my_scripts=/home/lisandro/workspace/MPA_Timeseries
-my_indices=/home/lisandro/Lavori/MPA_timeseries/Modskurt
-
+# ---- EDIT THESE THREE FOR YOUR CLUSTER ----
+my_container=${HOME}/containers
+my_scripts=${HOME}/workspace/MPA_Timeseries
+my_indices=${HOME}/data/Modskurt   # must match config.R dir_data
 while IFS=$'\t' read P1 P2
 
 do
@@ -17,8 +17,8 @@ JOB=`sbatch << EOF
 #SBATCH --ntasks-per-node=20
 #SBATCH --cpus-per-task=1
 
-#echo "apptainer exec --bind /home/lisandro:/home/lisandro ${my_container}/stats.sif Rscript ${my_scripts}/all_ecoregions_temperature.R ${P1} ${P2}" 
-apptainer exec --bind /home/lisandro:/home/lisandro ${my_container}/stats.sif Rscript ${my_scripts}/all_ecoregions_temperature.R ${P1} ${P2} 
+#echo "apptainer exec --bind ${HOME}:${HOME} ${my_container}/stats.sif Rscript ${my_scripts}/all_ecoregions_temperature.R ${P1} ${P2}" 
+apptainer exec --bind ${HOME}:${HOME} ${my_container}/stats.sif Rscript ${my_scripts}/all_ecoregions_temperature.R ${P1} ${P2} 
 
 EOF
 `

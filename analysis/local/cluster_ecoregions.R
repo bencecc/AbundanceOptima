@@ -5,21 +5,20 @@
 # single modskurt fit would otherwise violate the analysis's core requirement of
 # a CONTINUOUS LATITUDINAL GRADIENT. Two barrier types are detected, recursively.
 # The split criterion is purely a BARRIER (can a population span the gap?), NOT
-# temperature — the thermal gradient is the signal the analysis tracks, so a
-# thermal step must never trigger a split (it would cut the gradient where it is
-# richest). Temperature is reported (meanT/dT) for inspection only.
+# temperature — the thermal gradient is the signal the analysis tracks.
+# Temperature is reported (meanT/dT) for inspection only.
 #
 #   (a) LATITUDINAL GAP  — a wide unsampled latitude band (>= LAT_GAP_MIN_DEG)
 #       separating two DIFFERENT land masses (e.g. Bass Strait: mainland-Victoria
-#       vs Tasmania).  -> split N / S. Gate = gap + groups_diff_landmass (barrier),
+#       vs Tasmania): -> split N / S. Gate = gap + groups_diff_landmass (barrier),
 #       NO thermal requirement. (A gap on the SAME continuous coast is just a
-#       sampling gap on a continuous gradient -> not split.)
+#       sampling gap on a continuous gradient -> not split).
 #   (b) LONGITUDINAL DOUBLING — two longitude clusters at OVERLAPPING latitudes
-#       with LAND between them (coastline "doubles back", e.g. E/W Tasmania).
+#       with LAND between them (e.g. E/W Tasmania).
 #       Pooling them lands the peak ON LAND and relocation would swap coasts
-#       (a spurious LONGITUDINAL shift).  -> split E / W. Land barrier alone.
+#       (a spurious LONGITUDINAL shift):  -> split E / W. Land barrier alone.
 #
-# Justification: Martins et al. 2024 (PNAS; same group as modskurt/senlm) split
+# Justification: Martins et al. 2024 (PNAS; same group as modskurt) split
 # North America E/W to preserve continuous latitudinal gradients, justified by a
 # topographic barrier + climatic distinctness. This is the marine analogue.
 #
@@ -28,14 +27,15 @@
 # (Hawaii passed the unimodal QC -> its marginals are unimodal; its off-diagonal
 # raw peak is a separability artifact handled by relocation, latitude valid).
 #
-# Output = a SPLIT PLAN (no modskurt here). Standalone; pure diagnostics.
+# Output = a SPLIT PLAN.
 # ==========================================================================
 
 suppressMessages({
-  library(dplyr); library(tidyr); library(terra)
-  library(foreach); library(doMC)
+  require(dplyr); require(tidyr); require(terra)
+  require(foreach); require(doMC)
 })
-registerDoMC(cores = 64)   # half the 128-core node (Windows: silently sequential)
+source("config.R")
+registerDoMC(cores = 64)   # adjust to your core count (Windows: silently sequential)
 terra::terraOptions(memmax = 8)   # cap terra at 8 GB/op so big-RAM nodes STREAM rasters
                                   #   to disk instead of loading the whole GEBCO into memory
 
@@ -61,16 +61,9 @@ CONN_RES_DEG    <- 1/30    # ~3.7 km GEBCO grid for the land-between check
 AOI_PAD_DEG     <- 0.5    # small crop pad (only local land/sea needed now)
 
 # ── Paths (local work machine / server) ────────────────────────────────────
-onedrive_cand <- c("C:/Users/LBenedettiCecchi/OneDrive - University of Pisa",
-                   "C:/Users/lisan/OneDrive - University of Pisa")
-onedrive.wd  <- onedrive_cand[file.exists(onedrive_cand)][1]
-modskurt_dir <- if (!is.na(onedrive.wd)) "G:/My Drive/Lavori/MPA_timeseries/Modskurt" else
-                "/home/lisandro/Lavori/MPA_timeseries/Modskurt"
-gebco_nc   <- if (!is.na(onedrive.wd)) file.path(onedrive.wd, "Lavori/Shorelines/GEBCO/GEBCO_2024.nc") else
-              file.path(modskurt_dir, "GEBCO_2024.nc")
-glorys_path <- if (!is.na(onedrive.wd))                         # local: single-layer mean .tif
-               file.path(onedrive.wd, "Lavori/MPA_timeseries/EnvData/raster_glorys_daily_1993_2021_5_10_metres_mean.tif") else
-               "/home/lisandro/Lavori/MPA_timeseries/EnvData/glorys_annual_1993_2021_5_10_metres_mean.nc"  # server: ~29 ANNUAL layers (NOT the daily!)
+modskurt_dir <- dir_data
+gebco_nc     <- gebco_file
+glorys_path  <- glorys_daily_mean_tif   # temperature is report-only here (not a split criterion)
 
 # NULL = all 50 -> split_plan.RData ; a subset -> split_plan_TEST.RData
 # test battery: c("Bassian","Hawaii","Ningaloo","Western Sumatra","Tweed-Moreton")
@@ -102,8 +95,8 @@ load(file.path(modskurt_dir, "sp.df.RData"))
 # CRITICAL (server memory): pre-aggregate the FULL GEBCO to the coarse connectivity
 # grid ONCE, cached to disk — exactly like relocate_seapath's GEBCO_work_x2.tif.
 # terra::aggregate(filename=...) streams in blocks, so this is memory-bounded.
-# Parallel workers then crop this SMALL cached raster, NEVER the 1.8 GB native nc
-# (importing the native into 64 workers is what exhausts the 1.4 TB RAM).
+# Parallel workers then crop this SMALL cached raster, NEVER the large native nc
+# (importing the native into many workers is what blows up memory).
 gebco_work <- file.path(modskurt_dir, "GEBCO_cluster_work.tif")
 if (!file.exists(gebco_work)) {
   message("Pre-aggregating GEBCO to the ~", round(CONN_RES_DEG * 111, 1),

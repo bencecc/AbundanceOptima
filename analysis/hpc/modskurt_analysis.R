@@ -1,18 +1,18 @@
-#### ---- Analysis of changes in species abundance optima using the modksurt approach within ecoregions. -------- ####
-#### ---- This functions parallelizes the reapeated fits of the different models across ecoregions. ------------- ####
-#### ---- The input is a species ID number such that each node analyzes one species at the time. ---------------- ####
+#### ---- Analysis of changes in species optimal position using the modksurt approach within ecoregions. ---- ####
+#### ---- This functions parallelizes the reapeated simulations over selected models. The input ------------- ####
+#### ---- is a species ID number such that each node analyzes one species at the time ----------------------- ####
 require(dplyr)
-require(bayesplot)
-require(ggplot2)
 require(cmdstanr)
 require(modskurt1)
 
 require(foreach, quietly=T)
 require(doMC, quietly=T)
+source("config.R")
 registerDoMC(cores=5)
 
 # load data
-load("/home/lisandro/Lavori/MPA_timeseries/Modskurt/sp.df.RData")
+load(input_file("sp.df.RData"))
+#load(input_file("species.id.RData"))
 
 # ---- Apply cluster sub-regions from split_plan (replaces the old Bassian LON split) ----
 # split_plan (from cluster_ecoregions.R) flags which ecoregions are split and maps each
@@ -22,7 +22,7 @@ load("/home/lisandro/Lavori/MPA_timeseries/Modskurt/sp.df.RData")
 # fit as its own population, so the OUTPUT already has ECOREGION="Bassian", SPECIES="X_W",
 # SPECIES.ORIG="X" — no downstream
 # relabelling needed.
-load("/home/lisandro/Lavori/MPA_timeseries/Modskurt/split_plan.RData")
+load(input_file("split_plan.RData"))
 
 # Select parameters
 resp.var <- 'abund'
@@ -36,7 +36,7 @@ nyrs <- 4
 # RUN SCOPE (keeps the original "all or a subset of ecoregions" flexibility):
 #   run_ecoregions <- NULL          -> ALL ecoregions (full re-run; splits auto-applied).
 #   run_ecoregions <- c("Bassian")  -> only these BASE ecoregions (re-fit just what split).
-run_ecoregions <- c("Bassian", "Hawaii") # NULL for all ecoregions
+run_ecoregions <- NULL # NULL = ALL ecoregions (full run); c("Bassian","Hawaii") = re-fit only the split ecoregions
 
 if (!is.null(run_ecoregions)) sp.df <- sp.df |> filter(ECOREGION %in% run_ecoregions)
 
@@ -57,11 +57,15 @@ sp.df <- sp.df |>
 # filename (_ecoreg_<i>_), not as a folder. RENAME these manually after each run
 # (e.g. -> ModskurtOptimEcoreg_Abund / _Density) so abund and density don't collide,
 # since both runs write to the same fixed folder.
-modskurt_dir <- "/home/lisandro/Lavori/MPA_timeseries/Modskurt"
+modskurt_dir <- dir_data
 out_optim <- file.path(modskurt_dir, "ModskurtOptimEcoreg")
 out_plot  <- file.path(modskurt_dir, "ModskurtOptimEcoregPlot")
                    
+# Analysis on for CS_GBR
+#sp.df <- sp.df |> filter(ECOREGION=="Central and Southern Great Barrier Reef") 
+
 species.id <- sp.df |> distinct(SPECIES) 
+
 
 # generate and set output directory (per sub-region; see out_optim/out_plot above)
 if(!dir.exists(out_optim)) dir.create(out_optim, recursive = TRUE)

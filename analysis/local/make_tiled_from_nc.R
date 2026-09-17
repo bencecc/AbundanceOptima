@@ -1,14 +1,14 @@
 # make_tiled_from_nc.R — one-time: build the internally-TILED daily GLORYS tif
-# from the NetCDF, so AOI crops in slope_dev_nulldir_thebigone.r are ~10x faster
-# and far lighter on RAM (lets you raise NCORES). terra carries the CF time axis
-# into the tif, so time()/yr_layer keep working. Run ONCE (reused by all variants).
+# from the NetCDF, so downstream AOI crops are ~10x faster and far lighter on RAM
+# (lets you raise NCORES). terra carries the CF time axis into the tif, so
+# time()/yr_layer keep working. Run ONCE (reused by all variants).
 suppressMessages(require(terra))
+source("config.R")
 
-env_dir <- "/home/lisandro/Lavori/MPA_timeseries/EnvData"
-nc_in   <- file.path(env_dir, "glorys_daily_1993_2021_5_10_metres_mean.nc")
-# _TILED suffix marks it as the tiled build (distinct from the striped OneDrive copy,
-# which keeps the plain name). Same pixel values; only the internal layout differs.
-tif_out <- file.path(env_dir, "raster_glorys_daily_1993_2021_5_10_metres_mean_TILED.tif")
+nc_in   <- glorys_daily_nc
+# _TILED suffix marks it as the tiled build (distinct from the striped plain copy).
+# Same pixel values; only the internal layout differs.
+tif_out <- glorys_daily_tiled_tif
 
 r <- rast(nc_in)                 # if it warns of multiple subdatasets: rast(nc_in, subds = "thetao")
 cat("layers:", nlyr(r), " | time range:", format(range(time(r))), "\n")

@@ -1,5 +1,5 @@
 ##############################################################################
-# all_ecoregion_temperatures.R
+# all_ecoregions_temperature.R
 #
 # Extract ECOREGION-level warming rates (1993-2021) from the GLORYS raster.
 #
@@ -19,20 +19,24 @@
 #                                                           or taken from sp.focal)
 #
 # Output:
-#   - all_ecoregion_temperatures.RData
+#   - per-chunk .RData written into thetao_all_ecoregions_<coastal|all>/, reassembled
+#     into temperature_all_ecoregions_{coastal,all}.RData by cluster_summaries.R.
 #     data.frame with columns:
 #       ECOREGION, warming_rate, warming_se, n_cells, n_years_mean
 #
-# Designed for Linux cluster (doMC). Chunked by ecoregion index via CLI args.
+# HPC (doMC). Chunked by ecoregion index via CLI args.
 # Usage:
-#   Rscript all_ecoregion_temperatures.R [lw] [up]
+#   Rscript all_ecoregions_temperature.R [lw] [up]
 ##############################################################################
 
-require(tidyverse)
+require(dplyr)
+
+require(tidyr)
 require(sf)
 require(terra)
 require(foreach, quietly = TRUE)
 require(doMC)
+source("config.R")
 registerDoMC(cores = 5)
 
 # ── 1. Paths ────────────────────────────────────────────────────────────────
@@ -41,11 +45,10 @@ env.name <- "thetao"
 #  name for output files
 out.name <- "_all_ecoregions"
 
-BASE_DIR  <- "/home/lisandro/Lavori/MPA_timeseries/Modskurt"
-ENV_DIR   <- "/home/lisandro/Lavori/MPA_timeseries/EnvData"
-MEOW_PATH <- file.path(ENV_DIR, "Marine_Ecoregions_Of_the_World__MEOW_.shp")
-GLORYS_TIF <- file.path(ENV_DIR, "raster_glorys_daily_1993_2021_5_10_metres_mean.tif")
-GEBCO_NC  <- file.path(ENV_DIR, "GEBCO_2024.nc")
+BASE_DIR   <- dir_data
+MEOW_PATH  <- meow_shapefile
+GLORYS_TIF <- glorys_daily_mean_tif
+GEBCO_NC   <- gebco_file
 
 # ── Spatial domain flag: "coastal" (shelf only) or "all" (whole ecoregion) ──
 # Can be overridden on the command line as the 3rd argument:
@@ -62,9 +65,9 @@ if (DOMAIN == "coastal") {
 
 # Output directory (suffix by domain so the two runs don't overwrite each other)
 out.dir.suffix <- paste0(out.name, "_", DOMAIN)
-if(!file.exists(paste("/home/lisandro/Lavori/MPA_timeseries/Modskurt/", env.name, out.dir.suffix, sep="")))
-	dir.create(paste("/home/lisandro/Lavori/MPA_timeseries/Modskurt/", env.name, out.dir.suffix, sep=""))
-OUT_DIR <- paste("/home/lisandro/Lavori/MPA_timeseries/Modskurt/", env.name, out.dir.suffix, sep="")
+if(!file.exists(file.path(dir_data, paste0(env.name, out.dir.suffix))))
+	dir.create(file.path(dir_data, paste0(env.name, out.dir.suffix)))
+OUT_DIR <- file.path(dir_data, paste0(env.name, out.dir.suffix))
 
 # ── 2. Identify focal ecoregions ────────────────────────────────────────────
 # Use the ecoregions present in the modskurt fish dataset
@@ -154,8 +157,7 @@ if (length(args) >= 4) {
   stopifnot(DOMAIN %in% c("coastal", "all"))
   # Rebuild output directory with overridden domain
   out.dir.suffix <- paste0(out.name, "_", DOMAIN)
-  OUT_DIR <- paste("/home/lisandro/Lavori/MPA_timeseries/Modskurt/",
-                    env.name, out.dir.suffix, sep = "")
+  OUT_DIR <- file.path(dir_data, paste0(env.name, out.dir.suffix))
   if (!file.exists(OUT_DIR)) dir.create(OUT_DIR)
   # Ensure depth range exists if CLI switched us into coastal mode
   if (DOMAIN == "coastal" && !exists("DEPTH_MIN")) {

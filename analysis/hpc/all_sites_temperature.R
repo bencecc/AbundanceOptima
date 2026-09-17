@@ -1,5 +1,5 @@
 ##############################################################################
-# extract_standardized_warming.R
+# all_sites_temperature.R
 #
 # Extract annual mean subsurface temperature at ALL optimal peak sites
 # visited by each population, continuously from 1993 to the last fish
@@ -28,21 +28,25 @@
 #   - raster_glorys_daily_1993_2021_5_10_metres_mean.tif (GLORYS raster)
 #
 # Output:
-#   - standardized_warming_allsites_[lw]_[up].RData
+#   - per-chunk .RData written into thetao_all_sites/, reassembled into
+#     temperature_all_sites.RData by cluster_summaries.R.
 #     Columns: ECOREGION, SPECIES, SITE_LAT, SITE_LON, SITE_ORDER,
 #              YEAR, annual_mean_temp, FISH_SAMPLED
 #
-# Designed for Linux cluster (doMC). Adjust cores and paths as needed.
-# Usage: Rscript extract_standardized_warming.R [lw] [up]
+# HPC (doMC). Adjust cores and paths as needed.
+# Usage: Rscript all_sites_temperature.R [lw] [up]
 ##############################################################################
 
-require(tidyverse)
+require(dplyr)
+
+require(tidyr)
 require(sf)
 require(terra)
 
 require(foreach, quietly = TRUE)
 require(doMC)
 registerDoMC(cores = 20)
+source("config.R")
 
 # ── 1. Generate and set output directory ─────────────────────────────────────────────────────────────
 
@@ -51,14 +55,14 @@ env.name <- "thetao"
 # desired name for output files
 out.name <- "_all_sites"
 
-if(!file.exists(paste("/home/lisandro/Lavori/MPA_timeseries/Modskurt/", env.name, out.name, sep="")))
-	dir.create(paste("/home/lisandro/Lavori/MPA_timeseries/Modskurt/", env.name, out.name, sep=""))
+if(!file.exists(file.path(dir_data, paste0(env.name, out.name))))
+	dir.create(file.path(dir_data, paste0(env.name, out.name)))
 
-dir <- paste("/home/lisandro/Lavori/MPA_timeseries/Modskurt/", env.name, out.name, sep="")
+dir <- file.path(dir_data, paste0(env.name, out.name))
   
 # ── 2. Load data ─────────────────────────────────────────────────────────────
-load("/home/lisandro/Lavori/MPA_timeseries/Modskurt/optim.abund.relocated.RData")
-load("/home/lisandro/Lavori/MPA_timeseries/Modskurt/idx.optim.abund.relocated.RData")
+load(input_file("optim.abund.relocated.RData"))
+load(input_file("idx.optim.abund.relocated.RData"))
 
 idx.df <- idx.optim.abund.relocated
 
@@ -113,7 +117,7 @@ pop_summary <- pop_sites |>
 #    round(mean(table(paste(site_catalogue$ECOREGION, site_catalogue$SPECIES))), 1), "\n")
 
 # ── 4. Load GLORYS raster ────────────────────────────────────────────────────
-r <- terra::rast("/home/lisandro/Lavori/MPA_timeseries/EnvData/raster_glorys_daily_1993_2021_5_10_metres_mean.tif")
+r <- terra::rast(glorys_daily_mean_tif)
 time.vec  <- terra::time(r)
 years_all <- as.numeric(format(time.vec, "%Y"))
 

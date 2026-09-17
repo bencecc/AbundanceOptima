@@ -22,8 +22,7 @@
 #                        modskurt.optim.<kind>.unimodal, independent of Fig 4).
 #
 # SWITCHES: SCENARIO (data kind abund/density x reference first/previous site x
-#   short/long term) at the top; USE_OPTIMUM (DP global optimum vs greedy twin)
-#   in the Fig 4b block. Every ggsave() is commented — uncomment + set a folder.
+#   short/long term) at the top. Every ggsave() is commented — uncomment + set a folder.
 # ==========================================================================
 
 require(dplyr)
@@ -580,7 +579,7 @@ p_rg_all
 
 # ==========================================================================================================
 # (Fig 4b) WAS A BETTER-BUFFERING PATH REACHABLE, AND DID THE POPULATION TAKE IT? by guild x range.
-#   INGESTS the DETERMINISTIC best-reachable-cooling-path search (bestpath_greedy_search.r / bestpath_optimum_search.r):
+#   INGESTS the DETERMINISTIC best-reachable-cooling-path search (bestpath_optimum_search.r):
 #   bestpath.<kind>.<ref>.RData. Two ONE-SIDED tests (alpha 0.05), relative to the counterfactual
 #   (stay at the time-1 site) and to the realised path — both on the Slope.Dev ruler:
 #     p_best_lt_ref = best path buffers below the counterfactual (best < ref)
@@ -589,18 +588,17 @@ p_rg_all
 #     - No available mitigation path          : NOT(best < ref)                  (no reachable path beats staying)
 #     - Available but not followed : best < ref  AND  best < obs      (a cooler path than realised existed)
 #     - Available and followed : best < ref  AND  NOT(best < obs) (realised is as cool as the best)
-#   Constant-exposure best paths (permanent sub-STI refuges) carry refugium=TRUE and
-#   best_dev = -ref_slope (see bestpath header). guild x RANGE from trends_df (as Fig 4a).
+#   Constant-exposure best paths carry refugium=TRUE and best_dev = -ref_slope
+#   (see bestpath header). guild x RANGE from trends_df (as Fig 4a).
 # ==========================================================================================================
 BEST_KIND <- data_kind                                    # data kind + reference site for the best-path load
 BEST_REF  <- if (is_prevsite) "previoussite" else "firstsite"
-USE_OPTIMUM <- TRUE                                        # TRUE = DP global optimum (primary); FALSE = greedy twin
-bp_stem <- if (USE_OPTIMUM) "bestpath.opt" else "bestpath"
+bp_stem <- "bestpath.opt"                                 # DP global-optimum best-path
 bp_file <- input_file(sprintf("%s.%s.%s.RData", bp_stem, BEST_KIND, BEST_REF))
 BP_ALPHA <- 0.05
 bp <- get(load(bp_file)[1]) |> filter(is.na(drop_reason), resolvable)
-cat(sprintf("[bestpath] %s.%s: %d classifiable pops | %d refugia\n",
-            BEST_KIND, BEST_REF, sum(is.finite(bp$p_best_lt_ref)), sum(bp$refugium, na.rm = TRUE)))
+cat(sprintf("[bestpath] %s.%s: %d classifiable pops\n",
+            BEST_KIND, BEST_REF, sum(is.finite(bp$p_best_lt_ref))))
 dv <- bp |>
   left_join(distinct(trends_df, ECOREGION, SPECIES, THERMAL.GUILD, RANGE),
             by = c("ECOREGION", "SPECIES")) |>

@@ -7,18 +7,17 @@ framework; figures use *CockR* palettes.
 ---
 
 ## 1. What is and isn't provided
-- **Provided (Zenodo [DOI]):** every intermediate `.RData` along the analysis path, so you
+- **Provided (Zenodo 10.5281/zenodo.22799222):** every intermediate `.RData` along the analysis path, so you
   can enter the pipeline at any step and reproduce everything downstream — including all
   figures and tables — **without** re-running the heavy or environmental-data steps.
 - **Not provided (supply yourself, only to re-run from scratch):** the large **GLORYS**
   subsurface-temperature grids, **GEBCO** bathymetry, and the **MEOW** marine-ecoregions shapefile
   (`Marine_Ecoregions_Of_the_World__MEOW_.shp` + its `.shx`/`.dbf`/`.prj`; freely available from TNC).
   Point `config.R` (`glorys_dir`, `gebco_file`, `meow_shapefile`) at wherever you store them. GLORYS →
-  steps 1–4; GEBCO → steps 4, 7; MEOW → step 2 (ecoregion temperature) and step 11 (Fig 2 map). Their
+  steps 1, 2, 4; GEBCO → steps 4, 7; MEOW → step 2 (ecoregion temperature) and step 11 (Fig 2 map). Their
   outputs are in the Zenodo archive, so those stages are optional.
-- **STI is provided, not reproduced:** `reef_fish_sti_glorys.RData` is the canonical input. Its
-  generating scripts (stage 3) are included **for transparency only** — they query live
-  OBIS/WoRMS/FishBase, so re-running will not reproduce the exact STI.
+- **Species Temperature Index:** `reef_fish_sti_glorys.RData` is a provided input (per-species
+  thermal index + latitudinal range); use it as-is.
 
 Survey input spans 1992–2021; the analysed span (with GLORYS exposure) is 1993–2021.
 
@@ -48,11 +47,18 @@ Survey input spans 1992–2021; the analysed span (with GLORYS exposure) is 1993
 
 ## 3. Two kinds of script (how they run)
 - **Single session** — a plain R script (`Rscript foo.R`), optionally multicore (`foreach`/`doMC`);
-  no `.sh`/`.txt`. Runs on a laptop **or** the 128-core single-node server ("thebigone").
+  no `.sh`/`.txt`. Runs on a local, multicore computer.
 - **HPC session** — heavy steps split into chunks by a parameter file (`*.txt`) submitted via a
   shell script (`*.sh`). HPC-produced outputs are reassembled with `cluster_summaries.R`. Templates live in `analysis/hpc/`;
   adapt the cluster-specific header (account, modules, queue) to your system.
   **Most users skip these entirely and load the provided outputs.**
+  Each `.sh` has three paths to edit at the top for your cluster (`my_container`, `my_scripts`,
+  `my_indices`); `my_indices` (where the `.txt` params and data live) must match `config.R`'s
+  `dir_data`, since the `.R` still does `source("config.R")` inside the container — keep `config.R`
+  in the R working directory on the cluster.
+  **Choosing abundance vs density (or first-site vs previous-site)** is a manual switch in *two*
+  matching places: the commented `load(...)` line near the top of the `.R` (uncomment the variant
+  you want) and the `id.*.txt` parameter file named on the `done < …` line of its `.sh`.
 
 ## 4. Layout
 ```
@@ -81,20 +87,20 @@ Save convention: a script writes into its **own named subfolder under `results/`
 
 | # | Stage | Main script(s) | Runs on | Needs GLORYS/GEBCO | Input → output |
 |---|---|---|---|---|---|
-| 0 | Survey data input | *(assembled upstream)* | — | no | RLS + Reef Check → `sp.df.RData`; occurrences → `fish.occ.df`, `fish_names` |
+| 0 | Survey data input | *(assembled upstream)* | — | no | RLS + Reef Check → `sp.df.RData` |
 | 1 | GLORYS tiling → ~1 km working grid | `make_tiled_from_nc.R` | single session | **GLORYS** | GLORYS `.nc` → tiled working grid |
 | 2 | Site & ecoregion subsurface temperature | `all_sites_temperature.R`, `all_ecoregions_temperature.R` (+ their `.sh` + `.txt`) | HPC session | **GLORYS + MEOW** | → `temperature_all_sites`, `temperature_all_ecoregions` |
-| 3 | Species Temperature Index (STI) — *transparency only* | `fish_env_distr_run.R`, `fish_env_distr.R`, `worms_validate.R` (+ `.sh` + `sti_indices.txt`) | HPC session | **GLORYS** | `fish.occ.df` + `fish_names` → `reef_fish_sti_glorys` — **provided; scripts query live OBIS/WoRMS/FishBase, will not reproduce it exactly** |
+| 3 | Species Temperature Index (STI) | *(provided input — not generated here)* | — | no | provided `reef_fish_sti_glorys.RData` (per-species thermal index + latitudinal range) |
 | 4 | Barrier identification & ecoregion split (Bassian, Hawaii) | `cluster_ecoregions.R` | single session | **GEBCO** | site coords + GEBCO → `split_plan.RData` (Bassian → `_W/_E/_NW`, Hawaii → `_SE/_NW`) |
 | 5 | modskurt optima (lat & lon; abund & density) — **each split group fitted separately** | `modskurt_analysis.R` (+ `modskurt1.sh` + `spID_Bassian_Hawaii_Split.txt`; uses pkg `modskurt1`) | HPC session | no | `sp.df` + `split_plan` → `modskurt.optim.*` |
 | 6 | Unimodal-fit QC filter | `unimodal_fit_check.R`, `unimodal_filter_helper.R` | single session | no | `modskurt.optim.*` → `…unimodal` |
 | 7 | Relocation (SEA-PATH) | `replace_to_bathy_seapath.R` (via `cluster_summaries.R`) | single session | **GEBCO** | → `optim.*.relocated` |
 | 8 | Shift + leadtime + long-term panels | `sp_optimloc_shift(.lead_time).R`, `…longterm_ref_build.R` | HPC session | no | → `sp.optim.*.shift(.leadtime/.longterm)` |
 | 9 | Trends: directional + counterfactual scenarios | `optimloc_trend.R`, `optimloc_ecoregion_trend.R`, `optimum_response_scenarios.R` | HPC session | no | → `optim.*.trend`, `scenario.*` |
-| 10 | Best-path search (+ sensitivity) | `bestpath_optimum_search.r` (+ `bestpath_greedy_search.r`, `slope_dev_nulldir_thebigone.r`) | single session | no | → `bestpath.opt.*` |
-| 11 | Figures & tables | `figures/Fig1_panels.R`, `Fig2.r`, `Fig3.r`, `Fig4.r`; `tables/EDTables_1_and_2.R`, `Analysis/sensitivity_unrelocated.R` | single session | **MEOW** (Fig 2 map) | provided `.RData` → `results/…` |
+| 10 | Best-path search | `bestpath_optimum_search.r` | single session | no | → `bestpath.opt.*` |
+| 11 | Figures & tables | `figures/Fig1_panels.R`, `Fig2.r`, `Fig3.r`, `Fig4.r`; `tables/EDTables_1_and_2.R`, `analysis/local/sensitivity_unrelocated.R` | single session | **MEOW** (Fig 2 map) | provided `.RData` → `results/…` |
 
-*(HPC steps are 2, 3, 5, 8, 9 — each keeps its `.sh` and `.txt` together in `analysis/hpc/`; their
+*(HPC steps are 2, 5, 8, 9 — each keeps its `.sh` and `.txt` together in `analysis/hpc/`; their
 outputs are reassembled with `cluster_summaries.R`. HPC-produced `.RData` and the `.txt` parameter
 files are **not** in `data/`.)*
 
@@ -121,6 +127,3 @@ needs far fewer than a from-scratch re-run):
 - **Plotting extras** — `CockR` (bundled), `patchwork`, `ggh4x`, `ggpmisc`, `scales`.
 - **Extended Data tables (Word export)** — `flextable`, `officer`.
 - **Parallel / HPC** — `foreach`, `doMC`, `doParallel`, `parallel`.
-- **Online data APIs — stage 3 (STI) only, transparency** — `robis`, `rfishbase`, `worrms`
-  (these query live services; STI is provided as `reef_fish_sti_glorys.RData`, so most users
-  never need them).
