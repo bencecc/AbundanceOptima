@@ -20,8 +20,6 @@ require(tidyr)
 require(stringr)
 require(sf)
 require(terra)
-require(ncdf4)
-require(ncdf4.helpers)
 
 require(foreach, quietly=T)
 require(doMC)
