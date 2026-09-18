@@ -60,11 +60,8 @@ modskurt_dir <- dir_data
 out_optim <- file.path(modskurt_dir, "ModskurtOptimEcoreg")
 out_plot  <- file.path(modskurt_dir, "ModskurtOptimEcoregPlot")
                    
-# Analysis on for CS_GBR
-#sp.df <- sp.df |> filter(ECOREGION=="Central and Southern Great Barrier Reef") 
 
 species.id <- sp.df |> distinct(SPECIES) 
-
 
 # generate and set output directory (per sub-region; see out_optim/out_plot above)
 if(!dir.exists(out_optim)) dir.create(out_optim, recursive = TRUE)
@@ -222,5 +219,4 @@ if(!is.null(sp.optim.res)) {
 	save(list=paste(sp.name), file=outputPath)
 
 }
-
 
