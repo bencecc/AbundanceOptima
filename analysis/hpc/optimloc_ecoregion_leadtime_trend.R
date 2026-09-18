@@ -1,4 +1,60 @@
-#### ---- Analysis of the thermal profiles of fish communities inside and outside MPAs ---- ####
+#### ---- Short-term counterfactual (firstsite or previoussite) ---- ####
+#
+# For every population (ECOREGION x SPECIES) compares the exposure realised at the
+# yearly optimum sites (obs.var, a column of sp.optim.<kind>.shift, e.g.
+# shifted.cumtemp.above.mean) with the exposure the population would have had at a
+# reference site: ref.var = obs.var - diff.var, where diff.var is a column of the
+# lead-time panel sp.optim.<kind>.shift.leadtime (sp_optimloc_ecoreg_shift_lead_time.R)
+# giving, for each sampling year, the difference between exposure at the realised
+# site and at the first peak site (diff.FirstSite.*) or at the previous year's peak
+# site (diff.PreviousSite.*). Both trajectories cover the SAMPLING YEARS only
+# ("short-term"). obs and ref are stacked (CONTR = obs | ref) and fit with
+#   ENV.VAR ~ YEAR * CONTR (+ (1|group) | ou | ar1)             -> Trend_Environmental
+# whose YEAR:CONTR term is Slope.Dev, the counterfactual statistic. The same
+# stacked panel is also fit with
+#   ABUND ~ ENV.VAR * CONTR                                    -> Abund_Environmental
+#   ABUND ~ YEAR * CONTR                                       -> Abund_Trend
+# A reduced model without the CONTR terms gives the *.Alone rows.
+#
+# Args (6 columns, one row per model spec; leadtime.parms.temp.firstsite.txt or
+# leadtime.parms.temp.previoussite.txt, chosen in optimloc_leadtime_trend.sh):
+#   var.type      Env | Abund
+#   obs.env.var   e.g. shifted.cumtemp.above.mean   (column in sp.optim.<kind>.shift)
+#   contrast.var  the matching diff.FirstSite.* or diff.PreviousSite.* column
+#                 (column in sp.optim.<kind>.shift.leadtime) - this is what selects
+#                 the first-site vs previous-site reference
+#   autocor       no_autocor | ou | ar1
+#   trans         NULL | Standardize
+#   mod.family    gaussian | lognormal | nbinom2
+#
+# Inputs (paths from config.R): sp.optim.<kind>.shift.RData,
+# sp.optim.<kind>.shift.leadtime.RData, fish.traits.dat.RData (thermal guild,
+# feeding type and realm are attached as metadata columns, not used in the models).
+# Data kind (abund | density) = which pair of load() lines is active below.
+#
+# Output: one file per model spec, <var.type>_<obs.env.var>_<autocor>_<trans>_<family>
+# .RData in Optim_leadtime_trend/, a 6-row-per-population effect table (Ref.Int,
+# Ref.Slope, Int.Dev, Slope.Dev, Int.Alone, Slope.Alone; with AIC and warnings).
+# The folder name is fixed: rename it after each run (Optim_<kind>_leadtime_trend
+# for firstsite, Optim_<kind>_leadtime_prevsite_trend for previoussite) so that
+# cluster_summaries.R can reassemble it into optim.<kind>.leadtime.trend /
+# optim.<kind>.leadtime.prevsite.trend.
+#
+# Difference from optimloc_ecoregion_leadtime_trend_longterm.R:
+#   - reference trajectory: here from the lead-time panel differences, sampling
+#     years only; there from a long-term reference panel covering 1993 -> last
+#     sampling year (sp_optimloc_ecoreg_longterm_ref_build.R), stacked with its
+#     native year range;
+#   - first-site vs previous-site: here chosen by the contrast.var column of the
+#     parameter file (6 args); there by the ref.mode variable at the top of the
+#     script (5 args, ref.env.var = obs.env.var);
+#   - models: here Trend_Environmental + Abund_Environmental + Abund_Trend; there
+#     Trend_Environmental only;
+#   - output folder: fixed name here (rename after each run); there
+#     Optim_leadtime_trend_<ref.mode>_longterm, so nothing to rename.
+# The main-text counterfactual uses the long-term version; this script provides the
+# short-term twin for consistency checks.
+#######################################################################
 
 # load libraries
 require(tidyr)
