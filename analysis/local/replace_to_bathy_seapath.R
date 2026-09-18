@@ -1,6 +1,3 @@
-#' Relocate modeled peak sites onto reef habitat by SEA PATH, latitude-preserving
-#'
-#' @description
 #' Relocates each out-of-range peak site onto reef habitat by a LEAST-COST SEA
 #' PATH that avoids land, instead of a straight line. For each out-of-range point:
 #'   - it is snapped to the nearest sea cell (so a land-origin point enters the
@@ -9,7 +6,7 @@
 #'     point can "escape" through deep water) are computed to every cell;
 #'   - among 0-30 m reef cells reachable within `max_dist_km` BY SEA PATH, the
 #'     destination preferentially shares the peak's temperature pixel
-#'     (|Δlat| <= lat_band_deg); if none, the minimum forced |Δlat| is taken;
+#'     (|delta_lat| <= lat_band_deg); if none, the minimum forced |delta_lat| is taken;
 #'   - if no reef lies within the buffer by sea, the buffer is widened (x2),
 #'     then latitude is allowed to shift, so a point always reaches a reachable
 #'     reef rather than getting stuck.
@@ -17,22 +14,28 @@
 #' traversed to reach it. Movement never crosses land (sea-connected only).
 #'
 #' ESCAPE (resolution artifact): at the ~1 km working grid, reef-dense areas
-#' (e.g. the Swain/Pompey maze) fragment into isolated sea pockets, so a point's
-#' origin cell can have NO sea path to ANY band cell. Such points are NOT left
-#' stranded at their origin (that put points on land / in deep water); they fall
-#' back to a straight-line latitude-preserving rule (built into this function).
-#' The per-call message reports how many used the fallback.
+#' fragment into isolated sea pockets, so a point's origin cell can have NO
+#' sea path to ANY band cell. Such points are NOT left stranded at their origin
+#' (that put points on land / in deep water). Instead the same destination rule
+#' is applied with STRAIGHT-LINE distances (great-circle, land ignored) in place
+#' of sea-path distances: candidates are the 0-30 m reef cells within
+#' `max_dist_km` as the crow flies (buffer widened x2 if none), preferring the
+#' same latitude pixel (|delta_lat| <= lat_band_deg), else the smallest
+#' |delta_lat|, then the nearest (density tie-break). The point therefore lands
+#' on reef at (nearly) its original latitude, but the route to it may cross
+#' land. Sampled sites enter only through the AOI extent and the density
+#' tie-break; there is no interpolation between sampled sites. The per-call
+#' message reports how many points used the fallback.
 #'
 #' Slow (one Dijkstra / `accCost` per relocated point) but the sea transition is
 #' built once per call; intended for a many-core node.
 #'
-#' @return A data structure of relocated coordinates + flags. Relocated points get
+#' Returns a data structure of relocated coordinates + flags. Relocated points get
 #'   `status = "to_bathy_seapath"` (whether reached by sea path or the
 #'   straight-line fallback); `dist_km` is the sea-path distance (km) for
 #'   sea-routed points, or the straight-line distance for fallback points.
 #'   `status = "unplaced"` now occurs only if the AOI contains no band cell
 #'   at all (essentially never).
-#' @export
 replace_to_bathy_seapath <- function(
     modeled_df,
     sample_points,
@@ -168,9 +171,9 @@ replace_to_bathy_seapath <- function(
       # ESCAPE: at ~1 km the mask fragments reef-dense areas into isolated sea
       # pockets, so a point's origin cell has NO sea path to the 0-30 m band
       # (a resolution artifact, not a real barrier). Rather than leave it
-      # stranded at its origin (which is what put points on land / in deep
-      # water), fall back to the straight-line latitude-preserving rule
-      # (the built-in straight-line fallback). cos-lat great-circle km:
+      # stranded at its origin, apply the same destination rule below with
+      # straight-line (land-ignoring) distances to the reef band - see header.
+      # cos-lat great-circle km:
       if (!via_sea) {
         dvec <- sqrt(((band_xy[, 1] - plon) * cos(pa * pi / 180) * 111.32)^2 +
                      ((band_lat - pa) * 111.32)^2)
