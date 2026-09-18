@@ -21,11 +21,16 @@
 #' of sea-path distances: candidates are the 0-30 m reef cells within
 #' `max_dist_km` as the crow flies (buffer widened x2 if none), preferring the
 #' same latitude pixel (|delta_lat| <= lat_band_deg), else the smallest
-#' |delta_lat|, then the nearest (density tie-break). The point therefore lands
-#' on reef at (nearly) its original latitude, but the route to it may cross
-#' land. Sampled sites enter only through the AOI extent and the density
-#' tie-break; there is no interpolation between sampled sites. The per-call
-#' message reports how many points used the fallback.
+#' |delta_lat|, then the nearest. The point therefore lands on reef at (nearly)
+#' its original latitude, but the route to it may cross land.
+#' The sampled sites play only two indirect roles, in the sea-path and the
+#' fallback case alike: (i) together with the peak sites they define the
+#' rectangular bathymetry window (the "AOI", padded by `aoi_pad_deg`) from
+#' which candidate reef cells are taken; (ii) when several reef cells qualify,
+#' the choice among them weighs distance against how many sampled sites lie
+#' near each cell (`density_weight`, default 0.5), so cells surrounded by
+#' sampled sites are favoured. There is no interpolation between sampled
+#' sites. The per-call message reports how many points used the fallback.
 #'
 #' Slow (one Dijkstra / `accCost` per relocated point) but the sea transition is
 #' built once per call; intended for a many-core node.
