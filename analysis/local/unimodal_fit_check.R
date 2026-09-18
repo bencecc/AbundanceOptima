@@ -181,9 +181,7 @@ cat("Populations flagged in EITHER LAT or LON:",
 cat("\nOutputs written to:", out_dir, "\n")
 
 
-#### build modskurt.optim.<KIND>.unimodal (the original is kept intact) ####
-#### = optima with non-unimodal populations dropped, per the decision csv ####
-
+#### FILTER THE OPTIMA ---------------------------------------------------- ####
 # Drop populations with dubious (non-unimodal) modskurt peaks and save the filtered
 # optima as modskurt.optim.<kind>.unimodal.RData — the ORIGINAL modskurt.optim.<kind>
 # .RData is kept intact (NOT overwritten). Object name == file base (.unimodal),
