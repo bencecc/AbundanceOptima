@@ -44,13 +44,13 @@ build_scenario <- function(trend_df, out) {
 }
 
 # ---- SHORT-TERM scenarios ---------------------------------------------------
-build_scenario(optim.abund.leadtime.trend,            "scenario.abund.leadtime.firstsite")
-build_scenario(optim.abund.leadtime.prevsite.trend,   "scenario.abund.leadtime.prevsite")
-build_scenario(optim.density.leadtime.trend,          "scenario.density.leadtime.firstsite")
+build_scenario(optim.abund.leadtime.trend, "scenario.abund.leadtime.firstsite")
+build_scenario(optim.abund.leadtime.prevsite.trend, "scenario.abund.leadtime.prevsite")
+build_scenario(optim.density.leadtime.trend, "scenario.density.leadtime.firstsite")
 build_scenario(optim.density.leadtime.prevsite.trend, "scenario.density.leadtime.prevsite")
 
 # ---- LONG-TERM scenarios ----------------------------------------------------
-build_scenario(optim.abund.leadtime.firstsite.trend.longterm,      "scenario.abund.leadtime.firstsite.longterm")
-build_scenario(optim.abund.leadtime.previoussite.trend.longterm,   "scenario.abund.leadtime.previoussite.longterm")
-build_scenario(optim.density.leadtime.firstsite.trend.longterm,    "scenario.density.leadtime.firstsite.longterm")
+build_scenario(optim.abund.leadtime.firstsite.trend.longterm, "scenario.abund.leadtime.firstsite.longterm")
+build_scenario(optim.abund.leadtime.previoussite.trend.longterm, "scenario.abund.leadtime.previoussite.longterm")
+build_scenario(optim.density.leadtime.firstsite.trend.longterm, "scenario.density.leadtime.firstsite.longterm")
 build_scenario(optim.density.leadtime.previoussite.trend.longterm, "scenario.density.leadtime.previoussite.longterm")

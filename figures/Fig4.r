@@ -82,13 +82,13 @@ source("config.R")
 outdir <- file.path(dir_results, "Fig4_counterfactual")
 if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
 
-# ── Shared files (always needed regardless of data_kind) ------------------
+# -- Shared files (always needed regardless of data_kind) ------------------
 load(input_file("reef_fish_sti_glorys.RData"))
 load(input_file("fish.traits.dat.RData"))
 load(input_file("temperature_all_sites.RData"))
 load(input_file("sp.optim.abund.shift.RData"))     # unimodal_filter_helper needs it for ECOREGION_ID mapping
 
-# ── Core files — switch on data_kind ------------------------------------------
+# -- Core files — switch on data_kind ------------------------------------------
 if (data_kind == "abund") {
   # Realised panels + leadtime (sp.optim.abund.shift already loaded above)
   load(input_file("sp.optim.abund.shift.leadtime.RData"))

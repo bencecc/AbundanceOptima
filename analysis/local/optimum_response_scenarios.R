@@ -1,12 +1,10 @@
-# Derive scenarios of response to warming from shifts in optimal location. The input
-# file is a data frme originating from temporal models of shift in optimal locaiton
+# Derive scenarios of response to warming from shifts in abundance optima. The input
+# file is a data frame originating from temporal models of shift in abundance optima
 # (e.g., from function fit_optimum_scenario_ecoregion_leadtime). This function is
 # called in script sp.optimloc.scenarios
 ########################################################################################
 
 # multiple, complex, scenarios (scenarios and responses)
-
-
 optimum_response_scenarios <- function(df, ...) {
 	
 	p.value <- as.vector(unlist(df[,"P.value"]))
@@ -23,9 +21,6 @@ optimum_response_scenarios <- function(df, ...) {
 	p.slope.ref <- p.value[2]
 	p.int.dev <- p.value[3]
 	p.slope.dev <- p.value[4]
-	
-	#flag <- as.vector(unlist(df$FlagAnalysis[1]))
-	#model <- as.vector(unlist(df$mod.parms[1]))
 	
 	df <- df |>
 			mutate(

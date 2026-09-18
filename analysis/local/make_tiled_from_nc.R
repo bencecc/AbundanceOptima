@@ -1,6 +1,6 @@
 # make_tiled_from_nc.R — one-time: build the internally-TILED daily GLORYS tif
 # from the NetCDF, so downstream AOI crops are ~10x faster and far lighter on RAM
-# (lets you raise NCORES). terra carries the CF time axis into the tif, so
+# (lets you raise NCORES); terra carries the CF time axis into the tif, so
 # time()/yr_layer keep working. Run ONCE (reused by all variants).
 suppressMessages(require(terra))
 source("config.R")

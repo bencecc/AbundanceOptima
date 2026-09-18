@@ -48,7 +48,7 @@ require(doMC)
 registerDoMC(cores = 20)
 source("config.R")
 
-# ── 1. Generate and set output directory ─────────────────────────────────────────────────────────────
+# -- 1. Generate and set output directory -------------------------------------------------------------
 
 # prefix name of environmental variable in species index file
 env.name <- "thetao"
@@ -60,13 +60,13 @@ if(!file.exists(file.path(dir_data, paste0(env.name, out.name))))
 
 dir <- file.path(dir_data, paste0(env.name, out.name))
   
-# ── 2. Load data ─────────────────────────────────────────────────────────────
+# -- 2. Load data -------------------------------------------------------------
 load(input_file("optim.abund.relocated.RData"))
 load(input_file("idx.optim.abund.relocated.RData"))
 
 idx.df <- idx.optim.abund.relocated
 
-# ── 3. Build population-level site catalogue ─────────────────────────────────
+# -- 3. Build population-level site catalogue ---------------------------------
 range.df <- optim.abund.relocated |>
   mutate(abund = H.LAT) |>
   left_join(idx.df, by = c("ECOREGION", "SPECIES", "LAT", "LON", "YEAR")) |>
@@ -116,7 +116,7 @@ pop_summary <- pop_sites |>
 #cat("Mean sites per population:",
 #    round(mean(table(paste(site_catalogue$ECOREGION, site_catalogue$SPECIES))), 1), "\n")
 
-# ── 4. Load GLORYS raster ────────────────────────────────────────────────────
+# -- 4. Load GLORYS raster ----------------------------------------------------
 r <- terra::rast(glorys_daily_mean_tif)
 time.vec  <- terra::time(r)
 years_all <- as.numeric(format(time.vec, "%Y"))
@@ -129,7 +129,7 @@ available_years <- as.numeric(names(year_layers))
 
 r <- wrap(r)
 
-# ── 5. Command-line args for cluster chunking ────────────────────────────────
+# -- 5. Command-line args for cluster chunking --------------------------------
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) >= 2) {
   lw <- as.numeric(args[1])
@@ -140,7 +140,7 @@ if (length(args) >= 2) {
 }
 cat("Processing populations", lw, "to", up, "\n")
 
-# ── 6. Helper: extract annual mean temp at a point, with NA expansion ────────
+# -- 6. Helper: extract annual mean temp at a point, with NA expansion --------
 extract_annual_temp <- function(r_local, lon, lat, lyrs, years_all, year_layers) {
 
   p <- sf::st_point(c(lon, lat)) |>
@@ -188,7 +188,7 @@ extract_annual_temp <- function(r_local, lon, lat, lyrs, years_all, year_layers)
   )
 }
 
-# ── 7. Main extraction loop: all sites per population ────────────────────────
+# -- 7. Main extraction loop: all sites per population ------------------------
 
 results <- foreach(i = lw:up, .combine = "rbind",
                    .packages = c("terra", "sf", "dplyr"),
@@ -239,7 +239,7 @@ results <- foreach(i = lw:up, .combine = "rbind",
 
 #cat("\nExtraction complete. Rows:", nrow(results), "\n")
 
-# ── 7. Add fish-sampled flags ────────────────────────────────────────────────
+# -- 7. Add fish-sampled flags ------------------------------------------------
 results <- results |>
   left_join(
     fish_sampled_flags,
@@ -253,7 +253,7 @@ results <- results |>
   select(ECOREGION, SPECIES, SHIFTED_LAT, SHIFTED_LON, SITE_ORDER,
          SAMPLED_YEAR, YEAR, annual_mean_temp, FISH_SAMPLED)
 
-# ── 8. Save ──────────────────────────────────────────────────────────────────
+# -- 8. Save ------------------------------------------------------------------
 dim(results)
 
 assign(paste(env.name, lw, '_', up, sep=""), value=results, pos=1, inherits=T)

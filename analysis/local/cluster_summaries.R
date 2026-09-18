@@ -54,7 +54,7 @@ modskurt_dir <- dir_data
 load(file.path(modskurt_dir, "sp.df.RData"))                              # sampling sites (density guidance)
 load(file.path(modskurt_dir, paste0("modskurt.optim.", DATA.KIND, ".RData")))
 
-# ── Drop weak unimodal-fit populations, then RE-SAVE the filtered optima ───
+# -- Drop weak unimodal-fit populations, then RE-SAVE the filtered optima ---
 # Relocation is a separate CPU/memory-heavy step that RELOADS the filtered optima, so the QC filter
 # is applied HERE and saved as modskurt.optim.<kind>.unimodal.RData (the original
 # modskurt.optim.<kind>.RData is kept intact).
@@ -87,7 +87,7 @@ require(raster, quietly=T)      # accCost / extract over the transition
 # (ecoregions are looped serially). Set registerDoMC() cores to suit your machine.
 registerDoMC(cores=64)
 
-# ── RELOCATION MODEL: SEA-PATH (adopted 2026-06-05) ───────────────────────
+# -- RELOCATION MODEL: SEA-PATH (adopted 2026-06-05) -----------------------
 # This relocation block is CPU- and memory-heavy (run it on a large-memory
 # multicore machine). replace_to_bathy_seapath = least-cost sea path,
 # land-avoiding, latitude-preserving (with a built-in straight-line fallback).
@@ -106,7 +106,7 @@ optim.df <- get(paste0("modskurt.optim.", DATA.KIND, ".unimodal")) |>
   rename(LAT = m.LAT, LON = m.LON)
 ecoreg <- unique(optim.df$ECOREGION)
 
-# ── Pre-aggregate GEBCO ONCE to the ~1 km working grid (native x2) ─────────
+# -- Pre-aggregate GEBCO ONCE to the ~1 km working grid (native x2) ---------
 # Cached as a tif so each foreach worker crops a SMALL grid instead of
 # re-aggregating native GEBCO every cycle (that per-worker native aggregation
 # was the memory blow-up). Computed only the first time; ~1 km is far finer
@@ -164,7 +164,7 @@ setwd(dir_data)
 # optim.df above (unimodal_filter_helper), so the relocated set is already clean.
 optim.relocated <- optim.shift.ecoreg |> filter(YEAR != 1992)
 
-# ── Save with the kind-specific name (optim.abund.relocated / optim.density.relocated)
+# -- Save with the kind-specific name (optim.abund.relocated / optim.density.relocated)
 out_name <- paste0("optim.", DATA.KIND, ".relocated")
 assign(out_name, optim.relocated)
 save(list = out_name, file = paste0(out_name, ".RData"))
@@ -395,7 +395,7 @@ thetao.tmp <- foreach(i=1:length(file_list1), .combine='rbind') %dopar% {
 
 temperature_all_sites <- thetao.tmp
 
-# ── Apply the Bassian/Hawaii ecoregion split to the site rows ──────────────
+# -- Apply the Bassian/Hawaii ecoregion split to the site rows --------------
 # The thetao_all_sites files carry the CLEAN species name, but downstream warming
 # trends are joined to the split-suffixed populations (…_W/_E/_NW). Suffix each
 # split-ecoregion site by its W/E/NW group (nearest split_plan$sites site, matched

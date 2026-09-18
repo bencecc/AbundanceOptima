@@ -39,7 +39,7 @@ registerDoMC(cores = 64)   # adjust to your core count (Windows: silently sequen
 terra::terraOptions(memmax = 8)   # cap terra at 8 GB/op so big-RAM nodes STREAM rasters
                                   #   to disk instead of loading the whole GEBCO into memory
 
-# ── Tunables (the TEST BATTERY tunes these) ───────────────────────────────
+# -- Tunables (the TEST BATTERY tunes these) -------------------------------
 # DT_MIN          (REMOVED as a split criterion — temperature no longer gates any
 #                 split; meanT/dT are reported for inspection only. See header.)
 MIN_SITES       <- 5      # a kept group needs >= this many unique sites
@@ -60,7 +60,7 @@ NEARBY_LAND_KM  <- 200    # a group near a SMALL island <= this far from a large
 CONN_RES_DEG    <- 1/30    # ~3.7 km GEBCO grid for the land-between check
 AOI_PAD_DEG     <- 0.5    # small crop pad (only local land/sea needed now)
 
-# ── Paths (local work machine / server) ────────────────────────────────────
+# -- Paths (local work machine / server) ------------------------------------
 modskurt_dir <- dir_data
 gebco_nc     <- gebco_file
 glorys_path  <- glorys_daily_mean_tif   # temperature is report-only here (not a split criterion)
@@ -69,7 +69,7 @@ glorys_path  <- glorys_daily_mean_tif   # temperature is report-only here (not a
 # test battery: c("Bassian","Hawaii","Ningaloo","Western Sumatra","Tweed-Moreton")
 TEST_ECOREGIONS <- NULL
 
-# ── CONFIRMED biogeographic barriers (final gate) ──────────────────────────
+# -- CONFIRMED biogeographic barriers (final gate) --------------------------
 # The detectors above PROPOSE candidate splits; the saved plan keeps only the
 # candidates that correspond to a recognised barrier. This is a deliberate gate,
 # not a threshold, because no single geometric/bathymetric cut separates the real
@@ -89,7 +89,7 @@ TEST_ECOREGIONS <- NULL
 # Set to NULL to save every detected split (no confirmation gate).
 CONFIRMED_BARRIERS <- c("Bassian", "Hawaii")
 
-# ── Inputs ─────────────────────────────────────────────────────────────────
+# -- Inputs -----------------------------------------------------------------
 load(file.path(modskurt_dir, "sp.df.RData"))
 
 # CRITICAL (server memory): pre-aggregate the FULL GEBCO to the coarse connectivity
@@ -142,7 +142,7 @@ ecoreg_all <- sort(unique(sp.df$ECOREGION))
 ecoreg <- if (is.null(TEST_ECOREGIONS)) ecoreg_all else intersect(ecoreg_all, TEST_ECOREGIONS)
 cat("Running on:", paste(ecoreg, collapse = " | "), "\n\n")
 
-# ── Detectors ──────────────────────────────────────────────────────────────
+# -- Detectors --------------------------------------------------------------
 # (a) largest unsampled latitudinal gap -> candidate N/S cut latitude (or NA)
 find_lat_gap <- function(s) {
   lat <- sort(unique(round(s$LAT, 3)))
@@ -231,7 +231,7 @@ split_group <- function(s, gz, tag = "") {
   list(s)
 }
 
-# ── Per-ecoregion processing (one self-contained chunk) ────────────────────
+# -- Per-ecoregion processing (one self-contained chunk) --------------------
 # Rasters are passed in already-opened so the caller controls fork-safety.
 process_ecoregion <- function(eco, gebco) {
   usite <- sp.df |> filter(ECOREGION == eco) |> distinct(LON, LAT, T) |> as.data.frame()  # T pre-attached
@@ -245,7 +245,7 @@ process_ecoregion <- function(eco, gebco) {
   for (k in seq_along(groups)) groups[[k]]$group <- k
   usite_g <- bind_rows(groups); K <- length(groups)
 
-  # ── Directional suffix per group ─────────────────────────────────────────
+  # -- Directional suffix per group -----------------------------------------
   # LON-doubling children keep their "W"/"E" tag (their distinguishing axis);
   # LAT-split / unsplit groups get an 8-point compass label from the ecoregion
   # centroid (so the northern mainland reads "NW", the Tasmania coasts "W"/"E").
@@ -309,7 +309,7 @@ process_ecoregion <- function(eco, gebco) {
        species = sp_occ, report = report)
 }
 
-# ── Run: ecoregions in PARALLEL. Each worker RE-OPENS GEBCO/GLORYS from disk and
+# -- Run: ecoregions in PARALLEL. Each worker RE-OPENS GEBCO/GLORYS from disk and
 #    crops its own AOI window — terra's C++ raster pointers do NOT survive forking,
 #    so they cannot be shared from the parent (this is why a plain `for` was used
 #    before). doMC forks the rest of the env (helpers, sp.df, params) copy-on-write.

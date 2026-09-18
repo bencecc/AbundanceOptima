@@ -39,7 +39,7 @@ require(doMC)
 source("config.R")
 registerDoMC(cores = 5)
 
-# ── 1. Paths ────────────────────────────────────────────────────────────────
+# ---- 1. Paths ---------------------------------------------------------
 # prefix name of environmental variable in species index file
 env.name <- "thetao"
 #  name for output files
@@ -50,7 +50,7 @@ MEOW_PATH  <- meow_shapefile
 GLORYS_TIF <- glorys_daily_mean_tif
 GEBCO_NC   <- gebco_file
 
-# ── Spatial domain flag: "coastal" (shelf only) or "all" (whole ecoregion) ──
+# ---- Spatial domain flag: "coastal" (shelf only) or "all" (whole ecoregion) ----
 # Can be overridden on the command line as the 3rd argument:
 #   Rscript all_ecoregions_temperature.R [lw] [up] [domain]
 # e.g.:  Rscript ... 1 50 coastal      →  apply -30 - 0 m bathymetry mask
@@ -69,13 +69,13 @@ if(!file.exists(file.path(dir_data, paste0(env.name, out.dir.suffix))))
 	dir.create(file.path(dir_data, paste0(env.name, out.dir.suffix)))
 OUT_DIR <- file.path(dir_data, paste0(env.name, out.dir.suffix))
 
-# ── 2. Identify focal ecoregions ────────────────────────────────────────────
+# ---- 2. Identify focal ecoregions   ---------------------------------------------
 # Use the ecoregions present in the modskurt fish dataset
 load(file.path(BASE_DIR, "sp.optim.abund.shift.RData"))
 focal_ecos <- sort(unique(sp.optim.abund.shift$ORIG.ECOREGION))
 cat("Focal ecoregions:", length(focal_ecos), "\n")
 
-# ── 3. Load GLORYS raster and identify annual layer groups ──────────────────
+# ---- 3. Load GLORYS raster and identify annual layer groups ---------------------
 r <- terra::rast(GLORYS_TIF)
 time.vec  <- terra::time(r)
 years_all <- as.numeric(format(time.vec, "%Y"))
@@ -90,7 +90,7 @@ cat("GLORYS years:", min(available_years), "-", max(available_years), "\n")
 cat("GLORYS CRS:", terra::crs(r, describe = TRUE)$name, "\n")
 cat("GLORYS extent:", paste(as.vector(terra::ext(r)), collapse = ", "), "\n")
 
-# ── 3b. GEBCO bathymetry (only announced if coastal domain) ─────────────────
+# ---- 3b. GEBCO bathymetry (only announced if coastal domain) ----
 # Each worker opens GEBCO lazily inside the foreach loop, only when needed.
 if (DOMAIN == "coastal") {
   cat("GEBCO path:", GEBCO_NC, "(opened per-worker, coastal mask active)\n")
@@ -100,7 +100,7 @@ if (DOMAIN == "coastal") {
 glorys_ext <- as.vector(terra::ext(r))
 glorys_0_360 <- glorys_ext[2] > 180   # xmax > 180 → 0-360 convention
 
-# ── 4. Load MEOW polygons and reconcile CRS/longitude with raster ───────────
+# ---- 4. Load MEOW polygons and reconcile CRS/longitude with raster -----------------
 meow_raw <- sf::read_sf(MEOW_PATH)
 cat("MEOW CRS:", sf::st_crs(meow_raw)$Name, "\n")
 
@@ -139,7 +139,7 @@ for (k in seq_len(min(3, nrow(meow)))) {
 # Wrap raster for parallel workers
 r_wrap <- terra::wrap(r)
 
-# ── 5. CLI args for cluster chunking and domain flag ────────────────────────
+# -- 5. CLI args for cluster chunking and domain flag -------------
 #   arg 1 : lower ecoregion index
 #   arg 2 : upper ecoregion index
 #   arg 3 : domain ("coastal" or "all") — optional, overrides the default
@@ -172,7 +172,7 @@ if (DOMAIN == "coastal") {
   cat("No bathymetry mask — using all cells inside the ecoregion polygon\n")
 }
 
-# ── 6. Helper: compute per-cell annual means inside a polygon ───────────────
+# -- 6. Helper: compute per-cell annual means inside a polygon -------------
 # If domain == "coastal", apply the bathymetry depth mask; otherwise skip it
 # and use all cells inside the polygon.
 cell_annual_means <- function(r_local, bathy_local = NULL, poly,
@@ -203,7 +203,7 @@ cell_annual_means <- function(r_local, bathy_local = NULL, poly,
   if (is.null(r.poly)) return(NULL)
   terra::crs(r.poly) <- ref_crs
 
-  # ── Bathymetry mask (only if domain == "coastal") ────────────────────────
+  # -- Bathymetry mask (only if domain == "coastal") ------------------------
   if (domain == "coastal") {
     # Reproject GEBCO to the reference CRS if needed, then crop + resample.
     if (!terra::same.crs(bathy_local, r_local)) {
@@ -257,7 +257,7 @@ cell_annual_means <- function(r_local, bathy_local = NULL, poly,
     check.names = FALSE)
 }
 
-# ── 7. Main loop: per ecoregion → per-cell slopes → ecoregion mean ──────────
+# ---- 7. Main loop: per ecoregion → per-cell slopes → ecoregion mean -------------
 results <- foreach(i = lw:up, .combine = "rbind",
                    .packages = c("terra", "sf", "dplyr"),
                    .errorhandling = "pass",
@@ -325,7 +325,7 @@ results <- foreach(i = lw:up, .combine = "rbind",
   })
 }
 
-# ── 8. Save combined output ─────────────────────────────────────────────────
+# ---- 8. Save combined output ---------------------------------------------
 
 assign(paste(env.name, lw, '_', up, sep=""), value=results, pos=1, inherits=T)
 outputName=paste(env.name, lw, '_', up, ".RData",sep="")

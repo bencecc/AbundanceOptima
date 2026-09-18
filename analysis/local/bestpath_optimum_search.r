@@ -247,7 +247,7 @@ reason_row <- function(eco, sp, why)
              p_best_lt_ref = NA_real_, p_best_lt_obs = NA_real_,
              best_poleward = NA, refugium = NA, secs = NA_real_, drop_reason = why, stringsAsFactors = FALSE)
 
-# ── population loop ────────────────────────────────────────────────────────
+# -- population loop --------------------------------------------------------
 out_panel <- foreach(i = seq_len(nrow(batch_pops)), .combine = bind_rows,
                      .errorhandling = "remove") %dopar% {
   t0 <- proc.time()[3]
