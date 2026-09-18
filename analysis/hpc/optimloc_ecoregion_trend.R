@@ -1,6 +1,49 @@
-#### ---- Analysis of the thermal profiles of fish communities inside and outside MPAs ---- ####
+#### ---- Realised trends at the yearly optimum sites (directional shifts) ---- ####
+#
+# For every population (ECOREGION x SPECIES) fits a per-population time trend of a
+# quantity measured at the optimum (peak-abundance) site actually occupied in each
+# sampling year (sp.optim.<kind>.shift, i.e. the relocated modskurt optima). What is
+# fit depends on var.type:
+#   Lat | Lon   RESP = |LAT| or |LON| of the yearly optimum ~ YEAR        -> Trend_Lat / Trend_Lon
+#               (the directional shift of the optimum; the latitudinal
+#               trends are the significant poleward/equatorward shifts of
+#               Fig. 2 and Extended Data Table 1)
+#   Env         RESP.ENV = resp.env (exposure at the optimum) ~ YEAR       -> Trend_Environmental
+#   Abund       peak abundance ~ YEAR                                     -> Trend_Abundance
+#               peak abundance ~ resp.env (exposure)                      -> Abundance_Environmental
+# each with the random structure chosen by autocor: (1|group), ou(yrs|group) or
+# ar1(YEAR|group), one group per population. Trends are fit ONLY over the
+# population's sampling years, at the sites it actually occupied.
+#
+# Args (parms.temp.txt, 5 columns, one row per model spec; launched by
+# optimloc_trend.sh):
+#   var.type    Env | Abund | Lat | Lon
+#   resp.env    e.g. shifted.cumtemp.above.mean  (exposure column of sp.optim.<kind>.shift;
+#               the response for Env, the predictor for Abundance_Environmental)
+#   autocor     no_autocor | ou | ar1
+#   trans       NULL | Standardize
+#   mod.family  gaussian | lognormal | nbinom2
+#
+# Inputs (paths from config.R): sp.optim.<kind>.shift.RData, fish.traits.dat.RData
+# (thermal guild, feeding type and realm attached as metadata columns, not used in
+# the models). Data kind (abund | density) = which load() line is active below.
+#
+# Output: one file per model spec, <var.type>_<resp.env>_<autocor>_<trans>_<family>
+# .RData in Optim_trend/, with one row per population x Effect (Env.Int / Env.Trend,
+# Abund.Int / Abund.Trend, AbundEnv.Int / AbundEnv.Trend, Lat.Int / Lat.Trend, ...;
+# Estimate, SE, t.value, P.value, AIC, Warning, mod.parms). The folder name is
+# fixed: rename it after each run (Optim_abund_trend / Optim_density_trend) so
+# that cluster_summaries.R can reassemble it into optim.<kind>.trend.
+#
+# Difference from optimloc_ecoregion_trend_longterm.R: that script fits the same
+# Env trend to the exposure a population WOULD have had at one fixed reference
+# site (its first or previous-year optimum), extended back to 1993 and forward to
+# the last sampling year (the long-term reference panel built by
+# sp_optimloc_ecoreg_longterm_ref_build.R, ref.mode chosen inside the script and
+# a 6th argument). Here everything is the REALISED trajectory over the sampling
+# years only, and the Lat / Lon / Abund analyses exist only here.
+#######################################################################
 
-# load libraries
 # load libraries
 require(tidyr)
 require(lubridate)
