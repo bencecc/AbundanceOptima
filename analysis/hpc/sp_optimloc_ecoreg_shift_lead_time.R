@@ -1,17 +1,45 @@
-# Calculates the thermal exposure at the yearly peak-abundance (optimum) sites
-# located by modskurt_analysis and relocated onto reef habitat, like
-# sp_optimloc_ecoreg_shift.R, but ALSO at two counterfactual sites, so that the
-# exposure a population actually experienced can be compared with the exposure it
-# would have had if its peak: a) had stayed at the site of the first observed peak
-# in every subsequent sampling year (FirstSite), or b) had stayed at the peak site
-# of the previous sampling year (PreviousSite). For each population-year the output
-# gives the realised exposure and its difference from the two counterfactuals
-# (diff.FirstSite.* and diff.PreviousSite.*) for: the mean, maximum and SD of daily
-# temperature over the year (ambient.*), and the cumulative degree-days and the
-# number of days above each species-specific threshold — the species' thermal-index
-# mean and its 50th, 70th, 90th, 95th and 97.5th percentiles (from
-# reef_fish_sti_glorys) — plus the same quantities accumulated over all sampling
-# years (cum.*). Peak abundance is carried along for the abundance comparisons.
+# Calculates, for every population (ECOREGION x SPECIES), the thermal exposure at
+# its yearly peak-abundance (optimum) sites — the modskurt optima relocated onto reef
+# habitat, as in sp_optimloc_ecoreg_shift.R — AND the exposure it would have had at
+# two counterfactual sites, so that the realised trajectory can be compared with a
+# stay-put one. Mechanism: for each peak site of the population (one per sampling
+# year), daily GLORYS subsurface temperature is extracted at that site not only for
+# its own year but for every LATER sampling year of the population (LEAD_YEAR),
+# using the raster layers indexed by idx.optim.<kind>.relocated; if more than 10% of
+# the days are missing the extraction is widened to the 1-cell, then 2-cell,
+# neighbourhood and averaged. From each site x LEAD_YEAR daily series the same
+# annual metrics as in sp_optimloc_ecoreg_shift.R are computed: mean, maximum and SD
+# of temperature, and the cumulative degree-days and number of days ABOVE each
+# species-specific threshold — the species' thermal-index mean and its 50th, 70th,
+# 90th, 95th and 97.5th percentiles (from reef_fish_sti_glorys). Rows with
+# YEAR == LEAD_YEAR are the realised exposure; the others give what the population
+# would have experienced in a later year had it stayed at that site. From these:
+#   PreviousSite  exposure in year t at the peak site of year t-1
+#   FirstSite     exposure in year t at the peak site of the first sampling year
+# and the output holds, per population-year, the realised values and their
+# differences from the two counterfactuals (diff.PreviousSite.*, diff.FirstSite.*)
+# for peak abundance (abund), mean/max/SD temperature (ambient.*) and every
+# threshold metric (temp.* degree-days, days.*), plus the same metrics accumulated
+# over all sampling years (cum.*). Only populations with >= 2 sampling years enter.
+#
+# Args: lw up = the range of populations to process (one chunk per HPC task;
+# ranges listed in id.optim.<kind>.relocated.leadtime.txt, launched by
+# sp.optim.shift.leadtime.sh). Data kind (abund | density) = which pair of load()
+# lines is active below.
+#
+# Inputs (paths from config.R): optim.<kind>.relocated.RData,
+# idx.optim.<kind>.relocated.RData, reef_fish_sti_glorys.RData, glorys_daily_mean_tif.
+#
+# Output: one file per chunk, optim<lw>_<up>.RData in sp_optim_shift_leadtime/
+# (rename the folder to sp_optim_<kind>_shift_leadtime), reassembled by
+# cluster_summaries.R into sp.optim.<kind>.shift.leadtime — the short-term
+# counterfactual panel (diff.PreviousSite.* feeds the P(poleward shift) analysis of
+# Fig. 3; both diff.* sets feed optimloc_ecoregion_leadtime_trend.R).
+#
+# Difference from sp_optimloc_ecoreg_shift.R: that script extracts exposure only
+# for each site's own year (the realised panel); here every site is also followed
+# through the population's later years, which is what makes the counterfactuals
+# possible.
 
 # load libraries
 require(dplyr)
