@@ -121,7 +121,7 @@ if (!file.exists(gebco_work)) {
 # the ~10k-layer DAILY file: summarising that is what made the step crawl.
 usites_all <- sp.df |> distinct(LON, LAT)
 # Temperature is now REPORT-ONLY (no longer a split criterion), so GLORYS is
-# optional: if the raster is unavailable (e.g. a OneDrive online-only stub), run
+# optional: if the raster is unavailable (e.g. a cloud-drive placeholder file), run
 # with T = NA — the barrier-based splits are unaffected.
 glorys <- tryCatch({ g <- terra::rast(glorys_path); terra::crs(g) <- "epsg:4326"; g },
                    error = function(e) NULL)

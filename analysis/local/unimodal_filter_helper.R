@@ -6,23 +6,23 @@
 # frames you want filtered.
 #
 # USAGE
-#   source("G:/My Drive/workspace/BiodGlob/Fish_Thermal/Analysis/unimodal_filter_helper.R")
+#   source(file.path(PROJ, "analysis/local/unimodal_filter_helper.R"))   # PROJ from config.R
 #
 #   # Abundance, all deviation classes, default 50% threshold
 #   sp.optim.abund.shift <- unimodal_filter_helper(
 #     sp.optim.abund.shift,
-#     decision_csv = "~/Lavori/MPA_timeseries/Modskurt/unimodal_fit_check_pop_decision.csv")
+#     decision_csv = file.path(dir_data, "unimodal_fit_check_pop_decision.csv"))
 #
 #   # Bimodal-only (~5 pops), abundance
 #   sp.optim.abund.shift <- unimodal_filter_helper(
 #     sp.optim.abund.shift,
 #     classes      = "bimodal",
-#     decision_csv = "~/Lavori/MPA_timeseries/Modskurt/unimodal_fit_check_pop_decision.csv")
+#     decision_csv = file.path(dir_data, "unimodal_fit_check_pop_decision.csv"))
 #
 #   # Density data
 #   sp.optim.density.shift <- unimodal_filter_helper(
 #     sp.optim.density.shift,
-#     decision_csv = "~/Lavori/MPA_timeseries/Modskurt/unimodal_fit_check_pop_decision_density.csv")
+#     decision_csv = file.path(dir_data, "unimodal_fit_check_pop_decision_density.csv"))
 #
 # ARGUMENTS
 #   df            data frame with SPECIES + (ECOREGION or ORIG.ECOREGION)

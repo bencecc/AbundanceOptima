@@ -17,7 +17,7 @@
 # each class. Populations with consistent deviation from clear_unimodal
 # (>= 50% of years) are flagged as candidates for sensitivity-test exclusion.
 #
-# Outputs (saved to G:/My Drive/Lavori/MPA_timeseries/Modskurt/):
+# Outputs (saved to dir_data, from config.R):
 #   unimodal_fit_check_per_year.csv  — one row per file
 #   unimodal_fit_check_summary.csv   — one row per (SPECIES × ECOREGION × DIM)
 # ==========================================================================

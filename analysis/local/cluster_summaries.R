@@ -31,7 +31,6 @@ modskurt.optim.abund <- foreach(i=1:length(file_list), .combine='rbind') %dopar%
 	d
 } |> arrange(ECOREGION, SPECIES, YEAR)
 
-#setwd("~/Lavori/MPA_timeseries/Modskurt/")
 #save(modskurt.optim.abund, file="modskurt.optim.abund.RData")
 
 # DENSITY -------------------
@@ -43,7 +42,6 @@ modskurt.optim.density <- foreach(i=1:length(file_list), .combine='rbind') %dopa
 	d
 } |> arrange(ECOREGION, SPECIES, YEAR)
 
-#setwd("~/Lavori/MPA_timeseries/Modskurt/")
 #save(modskurt.optim.density, file="modskurt.optim.density.RData")
 
 
