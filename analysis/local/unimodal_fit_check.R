@@ -4,7 +4,9 @@
 # Quality check on modskurt unimodal fits per population × year × dimension.
 # Inspects the FITTED CURVE (mu_mean) from each .RData file (p.df[[2]] in
 # cluster_summaries.R convention) and classifies its shape, regardless of
-# the number of underlying data points (modskurt is robust to small n).
+# the number of underlying data points: sample size is gated upstream, since
+# modskurt_analysis.R fits a year only with > 4 surveyed sites and a population
+# only with > 4 years, so the QC judges curve SHAPE only.
 #
 # Classes:
 #   clear_unimodal : 1 internal local maximum, peak away from boundaries,
