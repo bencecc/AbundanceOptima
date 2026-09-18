@@ -16,7 +16,7 @@ load(input_file("sp.df.RData"))
 
 # ---- Apply cluster sub-regions from split_plan (replaces the old Bassian LON split) ----
 # split_plan (from cluster_ecoregions.R) flags which ecoregions are split and maps each
-# site to its group. For every split ecoregion (Bassian + Hawaii now, others in future) the
+# site to its group. For every split ecoregion (Bassian + Hawaii) the
 # sub-group suffix (directional: _W/_E/_NW) goes on SPECIES ("X" -> "X_W"), ECOREGION KEEPS
 # its base name, and the clean name is stored in SPECIES.ORIG. Each suffixed SPECIES is then
 # fit as its own population, so the OUTPUT already has ECOREGION="Bassian", SPECIES="X_W",
