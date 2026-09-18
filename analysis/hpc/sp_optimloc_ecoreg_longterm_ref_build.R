@@ -1,23 +1,37 @@
-# Build per-population long-term reference exposure panels at either the
-# FIRST optimum site (constant per population) or the PREVIOUS optimum site
-# (second-to-last sampling year's optimum, also constant per population).
-# For each year 1993 → last sampling year of the population, daily
-# temperatures are extracted at the chosen ref site and the same annual
-# exposure metrics used by sp_optimloc_ecoreg_shift_lead_time.R are
-# recomputed (shifted.cumtemp.above.{mean,q50,q70,q90,q95,q97.5},
-# shifted.days.above.{...}, shifted.{mean,max,sd}.temp).
+# Builds the LONG-TERM REFERENCE exposure panel used by the long-term
+# counterfactual (optimloc_ecoregion_leadtime_trend_longterm.R and
+# optimloc_ecoregion_trend_longterm.R): the thermal exposure each population would
+# have experienced had its peak stayed at ONE fixed reference site over the whole
+# temperature record, 1993 to the population's last sampling year, instead of at
+# the yearly optimum sites recorded in sp.optim.<kind>.shift. Two reference sites,
+# both constant per population (ECOREGION x SPECIES), chosen by ref.mode:
+#   firstsite     the relocated optimum of the FIRST sampling year
+#   previoussite  the relocated optimum of the SECOND-TO-LAST sampling year
+#                 (populations with a single sampling year have none and are skipped)
+# For every year 1993 -> last sampling year, daily GLORYS subsurface temperature is
+# extracted at the reference site (if >= 10% of days are missing, the 1-cell
+# neighbourhood is averaged; a year with no data is dropped) and the same annual
+# metrics as in sp_optimloc_ecoreg_shift.R are computed: mean, maximum and SD of
+# temperature (shifted.mean/max/sd.temp) and the cumulative degree-days and number
+# of days ABOVE each species-specific threshold — the species' thermal-index mean
+# and its 50th, 70th, 90th, 95th and 97.5th percentiles from reef_fish_sti_glorys
+# (shifted.cumtemp.above.*, shifted.days.above.*). Column names match
+# sp.optim.<kind>.shift (SHIFTED.LAT/LON = the reference site), so the two panels
+# can be stacked directly. Year 1992 is excluded (no temperature data).
 #
-# Args:
-#   ref.mode  firstsite  | previoussite
-#   lw        lower index of populations to process (1-based)
-#   up        upper index of populations to process
+# Args (3 columns, one row per chunk of populations; id.optim.<kind>.<ref.mode>.
+# longterm.txt, launched by sp.optim.longterm.ref.build.sh):
+#   ref.mode  firstsite | previoussite
+#   lw up     the range of population indices to process in this HPC task
+# Data kind (abund | density) = which pair of load() lines is active below.
 #
-# Output (one file per ref.mode):
-#   sp.optim.abund.firstsite.longterm.RData      — list element name: sp.optim.abund.firstsite.longterm
-#   sp.optim.abund.previoussite.longterm.RData   — list element name: sp.optim.abund.previoussite.longterm
-# Each is a long panel (one row per ECOREGION × SPECIES × YEAR) with the
-# same column names as sp.optim.abund.shift, so the downstream HPC and
-# plotting scripts can be pointed at it via a `load()` swap.
+# Inputs (paths from config.R): optim.<kind>.relocated.RData,
+# idx.optim.<kind>.relocated.RData, reef_fish_sti_glorys.RData, glorys_daily_mean_tif.
+#
+# Output: one file per chunk, sp.optim.<ref.mode>.longterm_<lw>_<up>.RData in
+# sp_optim_longterm_ref/ (rename the folder to sp_optim_<kind>_<ref.mode>_longterm_ref),
+# reassembled by cluster_summaries.R into sp.optim.<kind>.<ref.mode>.longterm — a
+# long panel with one row per ECOREGION x SPECIES x YEAR.
 
 require(dplyr)
 
@@ -94,7 +108,7 @@ env.df <- reef_fish_sti_glorys |>
 ref_sites <- ref_sites |>
   left_join(env.df, by=c("SPECIES.ORIG"="SPECIES"))
 
-# Build the (pop � evaluation year) grid 1993 at last_year per population
+# Build the (population x evaluation year) grid, 1993 to last_year per population
 eval_grid <- ref_sites |>
   rowwise() |>
   mutate(years = list(1993:last_year)) |>
