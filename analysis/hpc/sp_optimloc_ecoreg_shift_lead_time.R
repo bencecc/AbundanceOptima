@@ -1,18 +1,17 @@
-# This function calculates the exposure to environmental stressful conditions at
-# shifted sites determined by function modskurt_analysis, which identifies the optimal
-# position along latitudinal gradients. Like sp_optimloc_ecoreg_shift, but it calculates
-# environmental statistics at time lags to enable comparison of actual fish exposure
-# to stressful conditions to the exposure that would have occurred if peaks in
-# abundance: a) did not move in space and occurred repeatedly through time at the
-# site where the first peak was observed or b) remained at the peak site of the previous
-# sampling year. Comparisons quantify exposure to thermal extremes at the first peak
-# site for all the subsqeuent leading years (a) and at the preceeding sampling year
-# for all the other sites. The output provides differences of extreme temperatures
-# (above 0.975 percentile threshold for each species) and days above threshold with
-# respect to previous year and site of peak abundace (diff.temp, diff.days), to
-# first year in the time series (diff.firstyear.temp, diff.firstyear.days) and
-# cumulative differences across all sampling years in a time series
-# (cum.temp, cum.days).
+# Calculates the thermal exposure at the yearly peak-abundance (optimum) sites
+# located by modskurt_analysis and relocated onto reef habitat, like
+# sp_optimloc_ecoreg_shift.R, but ALSO at two counterfactual sites, so that the
+# exposure a population actually experienced can be compared with the exposure it
+# would have had if its peak: a) had stayed at the site of the first observed peak
+# in every subsequent sampling year (FirstSite), or b) had stayed at the peak site
+# of the previous sampling year (PreviousSite). For each population-year the output
+# gives the realised exposure and its difference from the two counterfactuals
+# (diff.FirstSite.* and diff.PreviousSite.*) for: the mean, maximum and SD of daily
+# temperature over the year (ambient.*), and the cumulative degree-days and the
+# number of days above each species-specific threshold — the species' thermal-index
+# mean and its 50th, 70th, 90th, 95th and 97.5th percentiles (from
+# reef_fish_sti_glorys) — plus the same quantities accumulated over all sampling
+# years (cum.*). Peak abundance is carried along for the abundance comparisons.
 
 # load libraries
 require(dplyr)
