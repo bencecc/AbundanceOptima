@@ -11,12 +11,11 @@
 #       * fit OLS slope (°C / yr) of annual mean temp vs YEAR
 #   - Aggregate grid-cell slopes to ecoregion-level warming rate (mean + SE)
 #
-# Input:
-#   - raster_glorys_daily_1993_2021_5_10_metres_mean.tif   (GLORYS daily raster)
-#   - Marine_Ecoregions_Of_the_World__MEOW_.shp            (MEOW polygons)
-#   - focal_ecoregions.RData                               (character vector of
-#                                                           focal ecoregion names,
-#                                                           or taken from sp.focal)
+# Input (paths from config.R):
+#   - sp.optim.abund.shift.RData     (the ecoregions to process = its ORIG.ECOREGION)
+#   - glorys_daily_mean_tif          (GLORYS daily subsurface-temperature raster)
+#   - meow_shapefile                 (MEOW ecoregion polygons)
+#   - gebco_file                     (GEBCO bathymetry; coastal mask, domain == "coastal" only)
 #
 # Output:
 #   - per-chunk .RData written into thetao_all_ecoregions_<coastal|all>/, reassembled
@@ -71,7 +70,7 @@ OUT_DIR <- file.path(dir_data, paste0(env.name, out.dir.suffix))
 
 # ---- 2. Identify focal ecoregions   ---------------------------------------------
 # Use the ecoregions present in the modskurt fish dataset
-load(file.path(BASE_DIR, "sp.optim.abund.shift.RData"))
+load(input_file("sp.optim.abund.shift.RData"))
 focal_ecos <- sort(unique(sp.optim.abund.shift$ORIG.ECOREGION))
 cat("Focal ecoregions:", length(focal_ecos), "\n")
 
