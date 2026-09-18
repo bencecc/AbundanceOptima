@@ -1,30 +1,49 @@
 #### ---- Long-term counterfactual (firstsite or previoussite) ---- ####
 #
-# Equivalent to optimloc_ecoregion_leadtime_trend.R but the counterfactual
-# trajectory (ref.var) is taken from a long-term reference panel covering
-# 1993 → last sampling year of the population, built by
-# sp_optimloc_ecoreg_longterm_ref_build.R. Observed trajectory (obs.var)
-# is the realised exposure at the yearly optimum sites during sampling
-# years (sp.optim.abund.shift). obs and ref are stacked with their native
-# year ranges intact and fit with the same interaction model.
+# The main-text counterfactual. For every population (ECOREGION x SPECIES) compares
+# the exposure realised at the yearly optimum sites (obs.var, a column of
+# sp.optim.<kind>.shift, sampling years) with the exposure the population would have
+# had at one fixed reference site — its first sampling year's optimum (firstsite) or
+# its second-to-last sampling year's optimum (previoussite) — over 1993 to the last
+# sampling year (ref.var, the same column of the long-term reference panel
+# sp.optim.<kind>.<ref.mode>.longterm, built by sp_optimloc_ecoreg_longterm_ref_build.R).
+# obs and ref are stacked with their native year ranges intact (CONTR = obs | ref)
+# and fit, one group per population, with
+#   ENV.VAR ~ YEAR * CONTR (+ (1|group) | ou | ar1)               -> Trend_Environmental
+# whose YEAR:CONTR term is Slope.Dev, the counterfactual statistic (how much the
+# realised exposure trend deviates from the stay-put trend). A reduced model without
+# the CONTR terms gives the *.Alone rows. Only var.type == "Env" rows are fit.
 #
-# Args (6, longterm.parms.temp.firstsite.txt or .previoussite.txt):
-#   var.type     Env | Abund
-#   obs.env.var  e.g. shifted.cumtemp.above.mean   (column in sp.optim.abund.shift)
-#   ref.env.var  same name as obs.env.var          (column in the long-term ref file)
+# Args (leadtime.parms.temp.longterm.txt, 5 columns, one row per model spec;
+# launched by optimloc_leadtime_trend_longterm.sh):
+#   var.type     Env
+#   obs.env.var  e.g. shifted.cumtemp.above.mean   (column in sp.optim.<kind>.shift;
+#                the long-term panel uses the same column name, so ref.env.var =
+#                obs.env.var and no contrast column is needed)
 #   autocor      no_autocor | ou | ar1
 #   trans        NULL | Standardize
 #   mod.family   gaussian | lognormal | nbinom2
+# Reference site and data kind are NOT arguments: set ref.mode (firstsite |
+# previoussite) and data.type (abund | density) at the top of the script.
 #
-# The choice of firstsite vs previoussite reference is controlled by which
-# long-term reference file is loaded (see ref.mode arg below). Same script
-# produces Optim_longterm_firstsite_leadtime_trend/ and
-# Optim_longterm_previoussite_leadtime_trend/ outputs.
+# Inputs (paths from config.R): sp.optim.<data.type>.shift.RData,
+# sp.optim.<data.type>.<ref.mode>.longterm.RData, fish.traits.dat.RData (thermal
+# guild, feeding type and realm attached as metadata columns, not used in the model).
 #
-# Output: 6-row-per-population effect table (Ref.Int, Ref.Slope, Int.Dev,
-# Slope.Dev, Int.Alone, Slope.Alone) — same shape as
-# optim.abund.leadtime.firstsite.trend, so optimum_response_scenarios()
-# can be applied directly.
+# Output: one file per model spec, <var.type>_<obs.env.var>_<ref.mode>_<autocor>_
+# <trans>_<family>.RData in Optim_leadtime_trend_<ref.mode>_longterm/, a 6-row-per-
+# population effect table (Ref.Int, Ref.Slope, Int.Dev, Slope.Dev, Int.Alone,
+# Slope.Alone; with AIC and warnings). Rename the folder to include the kind so that
+# cluster_summaries.R can reassemble it into optim.<kind>.leadtime.<ref.mode>.trend.
+# longterm, which optimum_response_scenarios.R turns into the counterfactual
+# scenarios (scenario.<kind>.leadtime.<ref.mode>.longterm) used in Fig. 4a and the
+# Extended Data tables.
+#
+# Difference from optimloc_ecoregion_leadtime_trend.R: there the reference is
+# obs - diff from the lead-time panel (first or previous-year site, sampling years
+# only, first/previous site chosen by the parameter file), and the abundance models
+# are also fit. Here the reference runs from 1993 at one fixed site and only the
+# exposure-trend model is fit.
 #######################################################################
 
 require(tidyr)

@@ -1,28 +1,43 @@
-#### ---- Long-term reference-site trend (firstsite or previoussite) ---- ####
+#### ---- Long-term exposure trend at a fixed reference site (firstsite or previoussite) ---- ####
 #
-# Equivalent to optimloc_ecoregion_trend.R but the input data are exposures
-# computed at the chosen REFERENCE optimum site of each population (first
-# or second-to-last sampling year's optimum), extended back to 1993 and
-# forward to the last sampling year. Assumption: the population would have
-# been present at the reference site for the full length of the
-# temperature time series.
+# For every population (ECOREGION x SPECIES) fits a time trend of the exposure the
+# population WOULD have experienced had it stayed at one fixed reference site — its
+# first sampling year's optimum (firstsite) or its second-to-last sampling year's
+# optimum (previoussite) — over the full temperature record, 1993 to the population's
+# last sampling year. Input is the long-term reference panel built by
+# sp_optimloc_ecoreg_longterm_ref_build.R and reassembled by cluster_summaries.R
+# (sp.optim.<kind>.<ref.mode>.longterm). Model, one group per population:
+#   RESP.ENV = resp.env (exposure at the reference site) ~ YEAR         -> Trend_Environmental
+# with the random structure chosen by autocor: (1|group), ou(yrs|group) or
+# ar1(YEAR|group). Only var.type == "Env" rows are fit; Abund/Lat/Lon rows of the
+# parameter file are skipped (those analyses exist in optimloc_ecoregion_trend.R).
 #
-# Args (parms.temp.longterm.txt, 6 columns):
-#   var.type    Env | Abund | Lat | Lon
-#   resp.env    shifted.cumtemp.above.{mean,q50,q70,q90,q95,q97.5} | ...
-#               (column name in the long-term reference panel)
+# Args (parms.temp.txt, 5 columns, one row per model spec; launched by
+# optimloc_trend_longterm.sh):
+#   var.type    Env   (other values are skipped)
+#   resp.env    e.g. shifted.cumtemp.above.mean  (exposure column of the long-term panel)
 #   autocor     no_autocor | ou | ar1
 #   trans       NULL | Standardize
 #   mod.family  gaussian | lognormal | nbinom2
-#   ref.mode    firstsite | previoussite
+# Reference site and data kind are NOT arguments: set ref.mode (firstsite |
+# previoussite) and data.type (abund | density) at the top of the script.
 #
-# Output saved to Optim_trend_longterm_<ref.mode>/<mod.parms>.RData with
-# the same row structure as optim.abund.trend (REALM, ECOREGION, SPECIES,
-# ..., Effect: Env.Int / Env.Trend, Estimate, SE, t.value, P.value, AIC,
-# Warning, mod.parms).
+# Inputs (paths from config.R): sp.optim.<data.type>.<ref.mode>.longterm.RData,
+# fish.traits.dat.RData (thermal guild, feeding type and realm attached as metadata
+# columns, not used in the model).
 #
-# Expected input file (built by sp_optimloc_ecoreg_longterm_ref_build.R):
-#   sp.optim.abund.<ref.mode>.longterm.RData
+# Output: one file per model spec, <var.type>_<resp.env>_<ref.mode>_<autocor>_<trans>_
+# <family>.RData in Optim_trend_<ref.mode>_longterm/, one row per population x Effect
+# (Env.Int / Env.Trend; Estimate, SE, t.value, P.value, AIC, Warning, mod.parms) —
+# the same row structure as optim.<kind>.trend. Rename the folder to include the
+# kind (e.g. Optim_abund_trend_firstsite_longterm) so that cluster_summaries.R can
+# reassemble it into optim.<kind>.<ref.mode>.trend.longterm.
+#
+# Difference from optimloc_ecoregion_trend.R: that script fits the trend of the
+# REALISED trajectory — the exposure (or latitude, longitude, abundance) at the
+# optimum site actually occupied in each sampling year, sampling years only. Here
+# the site is fixed and the series runs from 1993, so the slope is the warming the
+# population would have faced without moving.
 #######################################################################
 
 require(tidyr)
