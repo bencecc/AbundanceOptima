@@ -1,8 +1,33 @@
-# This function calculates the exposure to environmental stresfull conditions at
-# shifted sites determined by function modskurt_analysis, which identifies the optimal
-# position along latitudinal gradients. It calculates environmental statistics at fish occurrence
-# sites based on shifted LAT and LON coordinates (not ID; or original datatsets SITE_IDs).
-# It returns the ECOREGION at which the species was first recorded (ORIG.ECOREGION).
+# Calculates the thermal exposure REALISED at the yearly peak-abundance (optimum)
+# sites of each population: the optima located by modskurt_analysis and relocated
+# onto reef habitat (optim.<kind>.relocated), identified by their coordinates
+# (SHIFTED.LAT / SHIFTED.LON), not by survey SITE_ID. For every population-year,
+# daily GLORYS subsurface temperature is extracted at that site for that year
+# (the raster layers indexed by idx.optim.<kind>.relocated: time.start / time.step);
+# if more than 10% of the days are missing (site on land at raster resolution) the
+# extraction is widened to the surrounding 1-cell, then 2-cell, neighbourhood and
+# averaged. From the daily series it computes: the mean, maximum, SD and sum of
+# temperature over the year (shifted.mean/max/sd/cum.temp), and the cumulative
+# degree-days and number of days ABOVE each species-specific threshold — the
+# species' thermal-index mean and its 50th, 70th, 90th, 95th and 97.5th percentiles
+# (from reef_fish_sti_glorys) — and BELOW its mean and 50th, 10th, 5th and 2.5th
+# percentiles (shifted.cumtemp.above/below.*, shifted.days.above/below.*). Peak
+# abundance (abund) and the ecoregion the population belongs to (ORIG.ECOREGION)
+# are carried along. The two counterfactual exposures (first / previous peak site)
+# are NOT computed here but in sp_optimloc_ecoreg_shift_lead_time.R.
+#
+# Args: lw up = the row range of population-years to process (one chunk per
+# HPC task; ranges listed in id.optim.<kind>.relocated.txt, launched by
+# sp.optim.shift.sh). Data kind (abund | density) = which pair of load() lines is
+# active below.
+#
+# Inputs (paths from config.R): optim.<kind>.relocated.RData,
+# idx.optim.<kind>.relocated.RData, reef_fish_sti_glorys.RData, glorys_daily_mean_tif.
+#
+# Output: one file per chunk, optim<lw>_<up>.RData in sp_optim_shift/ (rename the
+# folder to sp_optim_<kind>_shift), reassembled by cluster_summaries.R into
+# sp.optim.<kind>.shift — the realised-exposure panel used by every downstream
+# trend, counterfactual and figure script.
 
 # load libraries
 require(dplyr)
@@ -30,8 +55,6 @@ load(input_file("optim.abund.relocated.RData"))
 load(input_file("idx.optim.abund.relocated.RData"))
 #load(input_file("idx.optim.density.relocated.RData"))
 
-# Bassian region splitted by LON
-
 idx.df <- idx.optim.abund.relocated # does not include year 1992, which must be removed from range.df set below to ensure the two data frames match
 
 # prefix name of environmental variable in species index file
@@ -51,12 +74,6 @@ range.df <- optim.abund.relocated |> mutate(abund=H.LAT) |>
 		# |> filter(YEAR!=1992) # remove year 1992 for which there is no temp data
 		left_join(idx.df, by=c("ECOREGION","SPECIES","SPECIES.ORIG","LAT","LON","YEAR"))
 
-# generate site id
-#ngroups <- range.df %>% arrange(LAT, LON) %>%
-#		group_by(LAT, LON) %>% dplyr::summarise(tlength=n(), .groups="drop")
-#site_id <- rep(1:nrow(ngroups), times=ngroups$tlength)
-#range.df$SITE_ID <- 1:nrow(range.df)
-
 # replace env.name prefix with "env" 
 env.df <- reef_fish_sti_glorys |>
 		rename_with(.fn = function(.x){str_replace(.x, env.name, "env")})
@@ -66,7 +83,7 @@ work.df <-  range.df |>
 
 sf.dat <- st_as_sf(work.df, coords=c("LON","LAT"))
 st_crs(sf.dat) <- "+proj=longlat +datum=WGS84"
-#sf.dat <- st_shift_longitude(sf.dat) # not needed with glorys data where longtude is already in the range -180,180
+#sf.dat <- st_shift_longitude(sf.dat) # not needed with glorys data where longitude is already in the range -180,180
 coords <- st_coordinates(sf.dat)
 work.df$LON <- coords[,1]
 work.df$LAT <- coords[,2]

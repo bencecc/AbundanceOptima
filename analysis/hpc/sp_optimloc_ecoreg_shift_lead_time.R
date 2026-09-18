@@ -40,8 +40,6 @@ load(input_file("optim.abund.relocated.RData"))
 load(input_file("idx.optim.abund.relocated.RData"))
 #load(input_file("idx.optim.density.relocated.RData"))
 
-# Bassian region splitted by LON
-
 idx.df <- idx.optim.abund.relocated # does not include year 1992, which must be removed from range.df set below to ensure the two data frames match
 
 # prefix name of environmental variable in species index file
