@@ -8,8 +8,8 @@
 # Inspects the FITTED CURVE (mu_mean) from each .RData file (p.df[[2]] in
 # cluster_summaries.R convention) and classifies its shape, regardless of
 # the number of underlying data points: sample size is gated upstream, since
-# modskurt_analysis.R fits a year only with > 4 surveyed sites and a population
-# only with > 4 years, so the QC judges curve SHAPE only.
+# modskurt_analysis.R fits a year only with at least 5 surveyed sites and a
+# population  only with > 4 years, so the QC judges curve SHAPE only.
 #
 # Classes:
 #   clear_unimodal : 1 internal local maximum, peak away from boundaries,
@@ -181,8 +181,8 @@ cat("Populations flagged in EITHER LAT or LON:",
 cat("\nOutputs written to:", out_dir, "\n")
 
 
-#### regenerate modskurt.optim.abund and modskurt.optim.density ---- ####
-#### filtered by unimodal_fit_check_pop_decision.csv --------------- ####
+#### build modskurt.optim.<KIND>.unimodal (the original is kept intact) ####
+#### = optima with non-unimodal populations dropped, per the decision csv ####
 
 # Drop populations with dubious (non-unimodal) modskurt peaks and save the filtered
 # optima as modskurt.optim.<kind>.unimodal.RData — the ORIGINAL modskurt.optim.<kind>
