@@ -19,7 +19,7 @@
 #' (that put points on land / in deep water). Instead the same destination rule
 #' is applied with STRAIGHT-LINE distances (great-circle, land ignored) in place
 #' of sea-path distances: candidates are the 0-30 m reef cells within
-#' `max_dist_km` as the crow flies (buffer widened x2 if none), preferring the
+#' `max_dist_km` by straight-line distance (buffer widened x2 if none), preferring the
 #' same latitude pixel (|delta_lat| <= lat_band_deg), else the smallest
 #' |delta_lat|, then the nearest. The point therefore lands on reef at (nearly)
 #' its original latitude, but the route to it may cross land.
