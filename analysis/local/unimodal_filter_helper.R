@@ -31,35 +31,25 @@
 #   threshold     drop a population if sum(pct_<class>) >= threshold (default 50)
 #   decision_csv  full path to the unimodal_fit_check_pop_decision csv
 #                 (no default — supply abundance or density file explicitly)
-#
-# REQUIREMENT
-#   sp.optim.abund.shift must be in memory; the QC csv stores ECOREGION_ID
-#   (integer) and we map it back to the ECOREGION name using the same
-#   `unique(test.dat$ECOREGION)` per-species order as modskurt_analysis.R.
+#   sp_df         the survey data (sp.df). The QC csv stores ECOREGION_ID, the
+#                 per-species index into unique(sp.df$ECOREGION) in first-
+#                 appearance order (how modskurt_analysis.R numbered the
+#                 _ecoreg_<i>_ files); sp_df is used to map it back to the
+#                 ECOREGION name.
 # ==========================================================================
 
 unimodal_filter_helper <- function(df,
                                    classes      = c("bimodal", "edge_peak", "flat"),
                                    threshold    = 50,
                                    decision_csv,
-                                   sp_df        = NULL,
-                                   map_df       = NULL) {
-  # sp_df: the sampling data (sp.df). PREFERRED. The decision CSV's ECOREGION_ID
-  #   is the per-species index into unique(sp.df$ECOREGION) in FIRST-APPEARANCE
-  #   order (exactly how modskurt_analysis.R numbered the _ecoreg_<i>_ files), so
-  #   sp.df is the only correct source for the id->name map. Bassian E/W split is
-  #   handled via df$SPECIES.ORIG (suffixed species -> "Bassian", id 1).
-  # map_df: DEPRECATED legacy fallback (used only if sp_df is NULL). Reconstructs
-  #   the id from map_df's row order, which mis-maps multi-ecoregion species when
-  #   map_df is sorted differently from sp.df (e.g. alphabetically by ECOREGION).
-  # map_df: data frame (with SPECIES + ORIG.ECOREGION) used to map the QC's
-  #   per-species ECOREGION_ID back to the ECOREGION name. Defaults to
-  #   sp.optim.abund.shift in .GlobalEnv (back-compat). For DENSITY data pass
-  #   map_df = sp.optim.density.shift, so the per-species ecoregion order matches
-  #   the density fits rather than abundance.
+                                   sp_df) {
+  # Split ecoregions (Bassian/Hawaii): suffixed species (SPECIES != SPECIES.ORIG)
+  # are not in sp.df; each was fit on one sub-region -> ecoregion index 1.
 
   if (missing(decision_csv))
     stop("Provide decision_csv = '...unimodal_fit_check_pop_decision[...].csv'")
+  if (missing(sp_df))
+    stop("Provide sp_df = sp.df (the survey data; needed to map ECOREGION_ID to names)")
   if (!"SPECIES" %in% names(df)) {
     message("unimodal_filter_helper: SPECIES not in data frame - returning unchanged")
     return(df)
@@ -83,45 +73,24 @@ unimodal_filter_helper <- function(df,
     dplyr::select(SPECIES_dot = SPECIES, ECOREGION_ID)
 
   # --- Map (SPECIES, ECOREGION_ID) -> ECOREGION name -----------------------
-  if (!is.null(sp_df)) {
-    # CORRECT path: per-species ecoregion order = unique(sp.df$ECOREGION) in
-    # first-appearance order (= modskurt_analysis.R's _ecoreg_<i>_ numbering).
-    eco_lookup <- sp_df |>
-      dplyr::distinct(SPECIES, ECOREGION) |>             # keeps first-appearance order
-      dplyr::group_by(SPECIES) |>
-      dplyr::mutate(ECOREGION_ID = dplyr::row_number()) |>
-      dplyr::ungroup()
-    # Bassian E/W split: suffixed species (SPECIES != SPECIES.ORIG in the data)
-    # aren't in sp.df; each was fit on one coast -> ecoreg index 1 -> "Bassian".
-    if ("SPECIES.ORIG" %in% names(df)) {
-      sm <- df[df$SPECIES != df$SPECIES.ORIG, c("SPECIES", eco_col)]
-      sm <- sm[!duplicated(sm), , drop = FALSE]
-      if (nrow(sm)) {
-        names(sm)[2] <- "ECOREGION"; sm$ECOREGION_ID <- 1L
-        eco_lookup <- dplyr::bind_rows(eco_lookup, sm)
-      }
+  # per-species ecoregion order = unique(sp.df$ECOREGION) in first-appearance
+  # order (= modskurt_analysis.R's _ecoreg_<i>_ numbering).
+  eco_lookup <- sp_df |>
+    dplyr::distinct(SPECIES, ECOREGION) |>             # keeps first-appearance order
+    dplyr::group_by(SPECIES) |>
+    dplyr::mutate(ECOREGION_ID = dplyr::row_number()) |>
+    dplyr::ungroup()
+  # split ecoregions: suffixed species are not in sp.df; each was fit on one
+  # sub-region -> ecoregion index 1 -> the base ecoregion name
+  if ("SPECIES.ORIG" %in% names(df)) {
+    sm <- df[df$SPECIES != df$SPECIES.ORIG, c("SPECIES", eco_col)]
+    sm <- sm[!duplicated(sm), , drop = FALSE]
+    if (nrow(sm)) {
+      names(sm)[2] <- "ECOREGION"; sm$ECOREGION_ID <- 1L
+      eco_lookup <- dplyr::bind_rows(eco_lookup, sm)
     }
-    eco_lookup$SPECIES_dot <- gsub(" ", ".", eco_lookup$SPECIES)
-  } else {
-    # DEPRECATED legacy path: reconstruct id from map_df row order (mis-maps
-    # multi-ecoregion species when map_df is sorted unlike sp.df). Pass sp_df=.
-    warning("unimodal_filter_helper: no sp_df= supplied; using legacy map_df ",
-            "row-order id mapping, which can mis-assign multi-ecoregion species. ",
-            "Pass sp_df = sp.df for the correct mapping.")
-    if (is.null(map_df)) {
-      if (!exists("sp.optim.abund.shift", envir = .GlobalEnv))
-        stop("Provide sp_df=, map_df=, or load sp.optim.abund.shift.RData.")
-      map_df <- get("sp.optim.abund.shift", envir = .GlobalEnv)
-    }
-    eco_lookup <- map_df |>
-      dplyr::rename(ECOREGION = ORIG.ECOREGION) |>
-      dplyr::group_by(SPECIES) |>
-      dplyr::group_modify(~ tibble::tibble(
-          ECOREGION    = unique(.x$ECOREGION),
-          ECOREGION_ID = seq_along(unique(.x$ECOREGION)))) |>
-      dplyr::ungroup() |>
-      dplyr::mutate(SPECIES_dot = gsub(" ", ".", SPECIES))
   }
+  eco_lookup$SPECIES_dot <- gsub(" ", ".", eco_lookup$SPECIES)
 
   remove_pops <- remove_list |>
     dplyr::inner_join(eco_lookup, by = c("SPECIES_dot", "ECOREGION_ID")) |>
