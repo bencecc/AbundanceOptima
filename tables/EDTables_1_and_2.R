@@ -17,10 +17,12 @@
 #     residual (acceleration + annihilation) footnoted.
 # ==========================================================================
 
-suppressMessages({library(dplyr); library(tidyr); library(glmmTMB)})
-setwd("~/Lavori/MPA_timeseries/Modskurt")
+require(dplyr)
+require(tidyr)
+require(glmmTMB)
+source("config.R")
 
-lo    <- function(f) get(load(f)[1])
+lo    <- function(f) get(load(input_file(f))[1])
 comma <- function(n) formatC(n, big.mark = ",", format = "d")
 # P-value formatted as in Table 2: "4 x 10^-21" for tiny P, else 3 decimals.
 fmt_p <- function(p) if (p < 1e-3) {
@@ -30,13 +32,11 @@ fmt_p <- function(p) if (p < 1e-3) {
 # ==========================================================================
 # SHARED DATA + DERIVED OBJECTS (used by both tables)
 # ==========================================================================
-load("sp.df.RData")                                  # raw survey (sites, years)
-load("sp.optim.abund.shift.RData")                   # analysed optima
-load("optim.abund.trend.RData")                      # latitudinal + env trends
+load(input_file("sp.df.RData"))                      # raw survey (sites, years)
+load(input_file("sp.optim.abund.shift.RData"))       # analysed optima
+load(input_file("optim.abund.trend.RData"))          # latitudinal + env trends
 scenario <- lo("scenario.abund.leadtime.firstsite.longterm.RData")   # counterfactual
-bpf <- c("bestpath_optimum/bestpath.opt.abund.firstsite.RData",
-         "bestpath.opt.abund.firstsite.RData")
-bestpath <- lo(bpf[file.exists(bpf)][1])             # best-path
+bestpath <- lo("bestpath.opt.abund.firstsite.RData") # best-path
 
 # realised optima, two views: `shift` keeps SHIFTED.* (Table 1 counts);
 # `sh` renames to LAT/LON (Table 2 transitions).
@@ -205,7 +205,8 @@ row("3. Counterfactual (Fig 4a)", cf_cell(scen),   cf_cell(in_sub(scen)))
 row("4. Best-path (Fig 4b)",      path_cell(bp),   path_cell(in_sub(bp)))
 cat("Row 3 = Mitigation ; matching + magnification (main-text split); residual ~4% (accel + annih) footnoted.\n")
 
-# ---- optional Word export for Table 1 (uncomment; set your own folder) ------
+# ---- optional Word export for Table 1 (uncomment) ----------------------------
 # require(flextable); require(officer)
+# dir.create(file.path(dir_results, "EDTables"), showWarnings = FALSE, recursive = TRUE)
 # print(flextable(bind_rows(tab, total_row)),
-#       target = "~/Lavori/MPA_timeseries/Modskurt/Tables/ExtendedDataTable1.docx")
+#       target = file.path(dir_results, "EDTables", "ExtendedDataTable1.docx"))

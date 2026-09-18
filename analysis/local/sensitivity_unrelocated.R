@@ -5,7 +5,7 @@
 # abundance optimum was essentially NOT relocated?
 #
 # Subset:  populations with MAX relocation distance == 0 km across ALL their
-#          years (never moved onto the reef band);  n = 429 of 2,880;
+#          years (never moved onto the reef band);  n = 428 of 2,876 (Mascarene excluded);
 #          [switch the SUBSET rule below to use a distance cutoff if desired.]
 #
 # Re-tallies/refits the four core analyses on the subset vs the full dataset:
