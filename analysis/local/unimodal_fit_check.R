@@ -2,6 +2,9 @@
 # unimodal_fit_check.R
 #
 # Quality check on modskurt unimodal fits per population × year × dimension.
+#   DIM = the gradient the curve was fitted along, LAT or LON: modskurt_analysis.R
+#   fits abundance separately against latitude and against longitude for every
+#   population x year, saved as ..._<year>_LAT.RData and ..._<year>_LON.RData.
 # Inspects the FITTED CURVE (mu_mean) from each .RData file (p.df[[2]] in
 # cluster_summaries.R convention) and classifies its shape, regardless of
 # the number of underlying data points: sample size is gated upstream, since
@@ -31,7 +34,7 @@ require(doMC)
 source("config.R")
 
 # ---- KIND switch: set ONCE; drives the scan folder AND the output suffix ----
-KIND     <- "density"                                  # "abund" | "density"
+KIND     <- "abund"                                  # "abund" | "density"
 stopifnot(KIND %in% c("abund", "density"))
 KIND_DIR <- if (KIND == "density") "Density" else "Abund"
 sfx      <- if (KIND == "density") "_density" else ""   # output filename suffix
@@ -44,8 +47,7 @@ setwd(src_dir)
 file_list <- list.files(pattern = "\\.RData$")
 cat("N files to scan:", length(file_list), "\n")
 
-# Parallel backend: doMC uses forking and inherits the parent's memory,
-# so no .export / clusterExport gymnastics are needed.
+# Parallel backend:
 registerDoMC(cores = max(1, parallel::detectCores() - 1))
 
 # --- Tunable thresholds --------------------------------------------------
