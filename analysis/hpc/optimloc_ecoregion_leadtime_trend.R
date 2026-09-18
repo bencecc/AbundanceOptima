@@ -30,7 +30,8 @@
 # Inputs (paths from config.R): sp.optim.<kind>.shift.RData,
 # sp.optim.<kind>.shift.leadtime.RData, fish.traits.dat.RData (thermal guild,
 # feeding type and realm are attached as metadata columns, not used in the models).
-# Data kind (abund | density) = which pair of load() lines is active below.
+# Data kind (abund | density): activate the matching pair of load() lines below AND
+# use the same kind in the two shift.df <- sp.optim.<kind>... lines that follow.
 #
 # Output: one file per model spec, <var.type>_<obs.env.var>_<autocor>_<trans>_<family>
 # .RData in Optim_leadtime_trend/, a 6-row-per-population effect table (Ref.Int,
@@ -73,17 +74,17 @@ if(!file.exists(file.path(dir_data, "Optim_leadtime_trend")))
 
 # load data
 
-#load(input_file("sp.optim.abund.shift.RData"))
-#load(input_file("sp.optim.abund.shift.leadtime.RData"))
-load(input_file("sp.optim.density.shift.RData"))
-load(input_file("sp.optim.density.shift.leadtime.RData"))
+load(input_file("sp.optim.abund.shift.RData"))
+load(input_file("sp.optim.abund.shift.leadtime.RData"))
+#load(input_file("sp.optim.density.shift.RData"))
+#load(input_file("sp.optim.density.shift.leadtime.RData"))
 
 load(input_file("fish.traits.dat.RData"))
 
 # steps for trend of optimloc shift data analysis on HPC - 
-shift.df <- sp.optim.density.shift |>
+shift.df <- sp.optim.abund.shift |>
 		rename(LAT=SHIFTED.LAT, LON=SHIFTED.LON)
-shift.df.leadtime <- sp.optim.density.shift.leadtime |>
+shift.df.leadtime <- sp.optim.abund.shift.leadtime |>
 		rename(LAT=SHIFTED.LAT, LON=SHIFTED.LON)
 
 ftr <- fish.traits.dat |>

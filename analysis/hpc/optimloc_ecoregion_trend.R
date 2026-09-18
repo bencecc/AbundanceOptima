@@ -26,7 +26,8 @@
 #
 # Inputs (paths from config.R): sp.optim.<kind>.shift.RData, fish.traits.dat.RData
 # (thermal guild, feeding type and realm attached as metadata columns, not used in
-# the models). Data kind (abund | density) = which load() line is active below.
+# the models). Data kind (abund | density): activate the matching load() line below
+# AND use the same kind in the shift.df <- sp.optim.<kind>.shift line that follows.
 #
 # Output: one file per model spec, <var.type>_<resp.env>_<autocor>_<trans>_<family>
 # .RData in Optim_trend/, with one row per population x Effect (Env.Int / Env.Trend,
@@ -60,15 +61,15 @@ source("config.R")
 if(!file.exists(file.path(dir_data, "Optim_trend")))
 	dir.create(file.path(dir_data, "Optim_trend"))
 
-#load(input_file("sp.optim.abund.shift.RData"))
-load(input_file("sp.optim.density.shift.RData"))
+load(input_file("sp.optim.abund.shift.RData"))
+#load(input_file("sp.optim.density.shift.RData"))
 
 # Bassian splitted
 
 load(input_file("fish.traits.dat.RData"))
 
 # Trend of the modskurt optimum-location shift data (HPC).
-shift.df <- sp.optim.density.shift |>
+shift.df <- sp.optim.abund.shift |>
 		rename(ECOREGION=ORIG.ECOREGION)
 
 ftr <- fish.traits.dat |>

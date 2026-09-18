@@ -26,4 +26,4 @@ echo "JobID = ${JOB} for parameters: ${P1}  ${P2}  ${P3}  ${P4}  ${P5} ${P6}"
 #submitted on `date`"
 #echo SLURM_JOB_NODELIST is $SLURM_JOB_NODELIST
 
-done < ${my_indices}/leadtime.parms.temp.previoussite.txt
+done < ${my_indices}/leadtime.parms.temp.firstsite.txt
