@@ -1,46 +1,46 @@
-#' Relocates each out-of-range peak site onto reef habitat by a LEAST-COST SEA
-#' PATH that avoids land, instead of a straight line. For each out-of-range point:
-#'   - it is snapped to the nearest sea cell (so a land-origin point enters the
-#'     sea graph at the coast);
-#'   - least-cost sea-path distances (land = barrier, any depth passable, so the
-#'     point can "escape" through deep water) are computed to every cell;
-#'   - among 0-30 m reef cells reachable within `max_dist_km` BY SEA PATH, the
-#'     destination preferentially shares the peak's temperature pixel
-#'     (|delta_lat| <= lat_band_deg); if none, the minimum forced |delta_lat| is taken;
-#'   - if no reef lies within the buffer by sea, the buffer is widened (x2),
-#'     then latitude is allowed to shift, so a point always reaches a reachable
-#'     reef rather than getting stuck.
-#' The 0-30 m band is always the TARGET (destination); deep water is only
-#' traversed to reach it. Movement never crosses land (sea-connected only).
-#'
-#' ESCAPE (resolution artifact): at the ~1 km working grid, reef-dense areas
-#' fragment into isolated sea pockets, so a point's origin cell can have NO
-#' sea path to ANY band cell. Such points are NOT left stranded at their origin
-#' (that put points on land / in deep water). Instead the same destination rule
-#' is applied with STRAIGHT-LINE distances (great-circle, land ignored) in place
-#' of sea-path distances: candidates are the 0-30 m reef cells within
-#' `max_dist_km` by straight-line distance (buffer widened x2 if none), preferring the
-#' same latitude pixel (|delta_lat| <= lat_band_deg), else the smallest
-#' |delta_lat|, then the nearest. The point therefore lands on reef at (nearly)
-#' its original latitude, but the route to it may cross land.
-#' The sampled sites play only two indirect roles, in the sea-path and the
-#' fallback case alike: (i) together with the peak sites they define the
-#' rectangular bathymetry window (the "AOI", padded by `aoi_pad_deg`) from
-#' which candidate reef cells are taken; (ii) when several reef cells qualify,
-#' the choice among them weighs distance against how many sampled sites lie
-#' near each cell (`density_weight`, default 0.5), so cells surrounded by
-#' sampled sites are favoured. There is no interpolation between sampled
-#' sites. The per-call message reports how many points used the fallback.
-#'
-#' Slow (one Dijkstra / `accCost` per relocated point) but the sea transition is
-#' built once per call; intended for a many-core node.
-#'
-#' Returns a data structure of relocated coordinates + flags. Relocated points get
-#'   `status = "to_bathy_seapath"` (whether reached by sea path or the
-#'   straight-line fallback); `dist_km` is the sea-path distance (km) for
-#'   sea-routed points, or the straight-line distance for fallback points.
-#'   `status = "unplaced"` now occurs only if the AOI contains no band cell
-#'   at all (essentially never).
+# Relocates each out-of-range peak site onto reef habitat by a LEAST-COST SEA
+# PATH that avoids land, instead of a straight line. For each out-of-range point:
+#   - it is snapped to the nearest sea cell (so a land-origin point enters the
+#     sea graph at the coast);
+#   - least-cost sea-path distances (land = barrier, any depth passable, so the
+#     point can "escape" through deep water) are computed to every cell;
+#   - among 0-30 m reef cells reachable within `max_dist_km` BY SEA PATH, the
+#     destination preferentially shares the peak's temperature pixel
+#     (|delta_lat| <= lat_band_deg); if none, the minimum forced |delta_lat| is taken;
+#   - if no reef lies within the buffer by sea, the buffer is widened (x2),
+#     then latitude is allowed to shift, so a point always reaches a reachable
+#     reef rather than getting stuck.
+# The 0-30 m band is always the TARGET (destination); deep water is only
+# traversed to reach it. Movement never crosses land (sea-connected only).
+#
+# ESCAPE (resolution artifact): at the ~1 km working grid, reef-dense areas
+# fragment into isolated sea pockets, so a point's origin cell can have NO
+# sea path to ANY band cell. Such points are NOT left stranded at their origin
+# (that put points on land / in deep water). Instead the same destination rule
+# is applied with STRAIGHT-LINE distances (great-circle, land ignored) in place
+# of sea-path distances: candidates are the 0-30 m reef cells within
+# `max_dist_km` by straight-line distance (buffer widened x2 if none), preferring the
+# same latitude pixel (|delta_lat| <= lat_band_deg), else the smallest
+# |delta_lat|, then the nearest. The point therefore lands on reef at (nearly)
+# its original latitude, but the route to it may cross land.
+# The sampled sites play only two indirect roles, in the sea-path and the
+# fallback case alike: (i) together with the peak sites they define the
+# rectangular bathymetry window (the "AOI", padded by `aoi_pad_deg`) from
+# which candidate reef cells are taken; (ii) when several reef cells qualify,
+# the choice among them weighs distance against how many sampled sites lie
+# near each cell (`density_weight`, default 0.5), so cells surrounded by
+# sampled sites are favoured. There is no interpolation between sampled
+# sites. The per-call message reports how many points used the fallback.
+#
+# Slow (one Dijkstra / `accCost` per relocated point) but the sea transition is
+# built once per call; intended for a many-core node.
+#
+# Returns a data structure of relocated coordinates + flags. Relocated points get
+#   `status = "to_bathy_seapath"` (whether reached by sea path or the
+#   straight-line fallback); `dist_km` is the sea-path distance (km) for
+#   sea-routed points, or the straight-line distance for fallback points.
+#   `status = "unplaced"` now occurs only if the AOI contains no band cell
+#   at all (essentially never).
 replace_to_bathy_seapath <- function(
     modeled_df,
     sample_points,
