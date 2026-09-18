@@ -5,9 +5,8 @@
 # abundance optimum was essentially NOT relocated?
 #
 # Subset:  populations with MAX relocation distance == 0 km across ALL their
-#          years (never moved onto the reef band).  n = 429 of 2,880.
-#          [switch the SUBSET rule below to use status=='ok' (n=319) or a
-#           distance cutoff if desired.]
+#          years (never moved onto the reef band);  n = 429 of 2,880;
+#          [switch the SUBSET rule below to use a distance cutoff if desired.]
 #
 # Re-tallies/refits the four core analyses on the subset vs the full dataset:
 #   1. Directional shifts  — significant LATITUDINAL trend (Fig 2)          [filter + re-tally]
@@ -19,8 +18,8 @@
 # Data kind = abundance, reference = firstsite (the primary panels).
 # ============================================================================
 
-.libPaths(c("C:/R_libs/win-library/4.5", .libPaths()))
-suppressMessages({require(dplyr); require(glmmTMB)})
+require(dplyr)
+require(glmmTMB)
 source("config.R")
 
 lo    <- function(f) get(load(input_file(f))[1])

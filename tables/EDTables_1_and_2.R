@@ -17,7 +17,6 @@
 #     residual (acceleration + annihilation) footnoted.
 # ==========================================================================
 
-.libPaths(c("C:/R_libs/win-library/4.5", .libPaths()))
 suppressMessages({library(dplyr); library(tidyr); library(glmmTMB)})
 setwd("~/Lavori/MPA_timeseries/Modskurt")
 
