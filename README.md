@@ -92,7 +92,7 @@ Save convention: a script writes into its **own named subfolder under `results/`
 | 2 | Site & ecoregion subsurface temperature | `all_sites_temperature.R`, `all_ecoregions_temperature.R` (+ their `.sh` + `.txt`) | HPC session | **GLORYS + MEOW** | → `temperature_all_sites`, `temperature_all_ecoregions` |
 | 3 | Species Temperature Index (STI) | *(provided input — not generated here)* | — | no | provided `reef_fish_sti_glorys.RData` (per-species thermal index + latitudinal range) |
 | 4 | Barrier identification & ecoregion split (Bassian, Hawaii) | `cluster_ecoregions.R` | single session | **GEBCO** | site coords + GEBCO → `split_plan.RData` (Bassian → `_W/_E/_NW`, Hawaii → `_SE/_NW`) |
-| 5 | modskurt optima (lat & lon; abund & density) — **each split group fitted separately** | `modskurt_analysis.R` (+ `modskurt1.sh` + `spID_Bassian_Hawaii_Split.txt`; uses pkg `modskurt1`) | HPC session | no | `sp.df` + `split_plan` → `modskurt.optim.*` |
+| 5 | modskurt optima (lat & lon; abund & density) — **each split group fitted separately** | `modskurt_analysis.R` (+ `modskurt1.sh` + `spID.txt`; uses pkg `modskurt1`); single-node alternative `modskurt_analysis_singlenode.R` (all species in parallel on one multicore machine) | HPC session | no | `sp.df` + `split_plan` → `modskurt.optim.*` |
 | 6 | Unimodal-fit QC filter | `unimodal_fit_check.R`, `unimodal_filter_helper.R` | single session | no | `modskurt.optim.*` → `…unimodal` |
 | 7 | Relocation (SEA-PATH) | `replace_to_bathy_seapath.R` (via `cluster_summaries.R`) | single session | **GEBCO** | → `optim.*.relocated` |
 | 8 | Shift + leadtime + long-term panels | `sp_optimloc_shift(.lead_time).R`, `…longterm_ref_build.R` | HPC session | no | → `sp.optim.*.shift(.leadtime/.longterm)` |
