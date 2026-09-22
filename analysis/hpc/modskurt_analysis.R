@@ -10,8 +10,11 @@ require(doMC, quietly=T)
 source("config.R")
 registerDoMC(cores=5)
 
-# load data
-load(input_file("sp.df.RData"))
+# load data. sp_df_file / run_tag allow a sensitivity run on an alternative survey table
+# (e.g. "sp.df.pooled.EAus.RData", run_tag "_pooledEAus") without touching the main outputs.
+sp_df_file <- "sp.df.RData"
+run_tag    <- ""
+sp.df <- get(load(input_file(sp_df_file)))
 #load(input_file("species.id.RData"))
 
 # ---- Apply the ecoregion sub-regions from split_plan --------------------------------
@@ -57,8 +60,8 @@ sp.df <- sp.df |>
 # (e.g. -> ModskurtOptimEcoreg_Abund / _Density) so abund and density don't collide,
 # since both runs write to the same fixed folder.
 modskurt_dir <- dir_data
-out_optim <- file.path(modskurt_dir, "ModskurtOptimEcoreg")
-out_plot  <- file.path(modskurt_dir, "ModskurtOptimEcoregPlot")
+out_optim <- file.path(modskurt_dir, paste0("ModskurtOptimEcoreg", run_tag))
+out_plot  <- file.path(modskurt_dir, paste0("ModskurtOptimEcoregPlot", run_tag))
                    
 
 species.id <- sp.df |> distinct(SPECIES) 
