@@ -19,16 +19,17 @@ registerDoMC(cores = n_cores)
 # load data -- two alternatives:
 # 1) MAIN ANALYSIS, one population per species x ecoregion (with the split_plan sub-regions):
 load(input_file("sp.df.RData"))
-# 2) SENSITIVITY "pooled East Australia": species with sites in >= 2 adjacent ecoregions of
-#    the Torres Strait -> Bassian (eastern group) coast, relabelled to ONE ecoregion so the
-#    optimum is fit over the whole 29-degree gradient (co-author query on the ecoregion split).
-#    Uncomment the two lines below instead of 1); keep run_ecoregions <- NULL (a Bassian/Hawaii
-#    subset would empty the pooled data); the split_plan block below then matches nothing and
-#    leaves SPECIES unchanged. ALSO switch the output folders (out_optim / out_plot below) to
-#    the _pooledEAus alternatives, or the main outputs are overwritten, and point modskurt1.sh
-#    at spID_pooledEAus.txt (1..624) in its last line ("done < ...") -- do not overwrite spID.txt.
-#load(input_file("sp.df.pooled.EAus.RData"))
-#sp.df <- sp.df.pooled.EAus
+# 2) SENSITIVITY "pooled coasts": species with sites in >= 2 adjacent ecoregions of a spatially
+#    continuous coast (East Australia, West/South Australia, California; built by
+#    analysis/local/build_pooled_coasts.R) relabelled to ONE ecoregion per coast, so the optimum
+#    is fit over the coast's whole latitudinal gradient (co-author query on the ecoregion split).
+#    Uncomment the two lines below instead of 1); keep run_ecoregions <- NULL; the split_plan
+#    block below then matches nothing and leaves SPECIES unchanged. ALSO switch the output
+#    folders (out_optim / out_plot below) to the _pooled alternatives, or the main outputs are
+#    overwritten, and use spID_pooled.txt (1..935) as the species list (modskurt1.sh last line
+#    "done < ..." / sp_to in the single-node script) -- do not overwrite spID.txt.
+#load(input_file("sp.df.pooled.RData"))
+#sp.df <- sp.df.pooled
 #load(input_file("species.id.RData"))
 
 # ---- Apply the ecoregion sub-regions from split_plan --------------------------------
@@ -80,8 +81,8 @@ sp.df <- sp.df |>
 modskurt_dir <- dir_data
 out_optim <- file.path(modskurt_dir, "ModskurtOptimEcoreg")          # 1) main analysis
 out_plot  <- file.path(modskurt_dir, "ModskurtOptimEcoregPlot")
-#out_optim <- file.path(modskurt_dir, "ModskurtOptimEcoreg_pooledEAus")     # 2) pooled sensitivity
-#out_plot  <- file.path(modskurt_dir, "ModskurtOptimEcoregPlot_pooledEAus")
+#out_optim <- file.path(modskurt_dir, "ModskurtOptimEcoreg_pooled")     # 2) pooled-coasts sensitivity
+#out_plot  <- file.path(modskurt_dir, "ModskurtOptimEcoregPlot_pooled")
                    
 
 species.id <- sp.df |> distinct(SPECIES) 
