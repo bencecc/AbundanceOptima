@@ -24,7 +24,6 @@ load(input_file("sp.df.RData"))
 #    "done < ..." / sp_to in the single-node script) -- do not overwrite spID.txt.
 #load(input_file("sp.df.pooled.RData"))
 #sp.df <- sp.df.pooled
-#load(input_file("species.id.RData"))
 
 # ---- Apply the ecoregion sub-regions from split_plan --------------------------------
 # split_plan (from cluster_ecoregions.R) flags which ecoregions are split and maps each

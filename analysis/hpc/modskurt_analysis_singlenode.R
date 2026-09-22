@@ -13,7 +13,7 @@ require(modskurt1)
 require(foreach, quietly=T)
 require(doMC, quietly=T)
 source("config.R")
-n_cores <- 120                       # one worker per species; each fit is single-threaded
+n_cores <- 60                       # one worker per species; each fit is single-threaded
 registerDoMC(cores = n_cores)
 
 # load data -- two alternatives:
@@ -30,7 +30,6 @@ load(input_file("sp.df.RData"))
 #    "done < ..." / sp_to in the single-node script) -- do not overwrite spID.txt.
 #load(input_file("sp.df.pooled.RData"))
 #sp.df <- sp.df.pooled
-#load(input_file("species.id.RData"))
 
 # ---- Apply the ecoregion sub-regions from split_plan --------------------------------
 # split_plan (from cluster_ecoregions.R) flags which ecoregions are split and maps each
