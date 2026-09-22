@@ -6,6 +6,10 @@
 #### ---- Outputs are identical: one <species>.RData per species in out_optim (+ plot data).    ---- ####
 #### ---- Meant to be run interactively: set n_cores and the species range (sp_from, sp_to)     ---- ####
 #### ---- below. Already-finished species are skipped, so a run can simply be restarted.        ---- ####
+#### ---- Each worker runs its 4 MCMC chains in parallel (modskurt_fit default), so it uses 4   ---- ####
+#### ---- cores: n_cores = available cores / 4. CmdStan writes every fit's chain CSVs to the     ---- ####
+#### ---- session temp dir (~300 MB per species-year over the 132-model grid); they are deleted  ---- ####
+#### ---- as the run goes (see clean_cmdstan_tmp), and TMPDIR should point to a large local disk. ---- ####
 require(dplyr)
 require(cmdstanr)
 require(modskurt1)
@@ -13,8 +17,15 @@ require(modskurt1)
 require(foreach, quietly=T)
 require(doMC, quietly=T)
 source("config.R")
-n_cores <- 60                       # one worker per species; each fit is single-threaded
+n_cores <- 30                        # workers = cores / 4 (each fit runs its 4 chains in parallel)
 registerDoMC(cores = n_cores)
+
+# CmdStan chain CSVs accumulate in tempdir() for the whole session; remove the ones older than
+# max_age_min (a fit takes seconds, so those belong to finished fits whose summaries were read)
+clean_cmdstan_tmp <- function(max_age_min = 20) {
+	f <- list.files(tempdir(), pattern = "\\.csv$", full.names = TRUE, recursive = TRUE)
+	if (length(f)) unlink(f[difftime(Sys.time(), file.info(f)$mtime, units = "mins") > max_age_min])
+}
 
 # load data -- two alternatives:
 # 1) MAIN ANALYSIS, one population per species x ecoregion (with the split_plan sub-regions):
@@ -142,6 +153,8 @@ sp.optim.res <- foreach(i=1:length(ecoreg), .combine="rbind") %do% {
 			cat('Doing YEAR ', j, ' of ', nrow(yr.df),
 					' for SPECIES ', i, ' of ', length(sp.id), '\n', sep = '')
 			
+			clean_cmdstan_tmp()      # keep the session temp dir bounded (see header)
+
 			# proceed if there are at least n (>1 or >4) years
 			yrs.check <- yr.df[j,"n"]
 			
