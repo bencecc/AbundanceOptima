@@ -4,11 +4,8 @@
 #### ---- distributed over the cores (doMC/fork) and the years within a species run sequentially ---- ####
 #### ---- (the reverse of the HPC version, where a task = one species and years run in parallel). ---- ####
 #### ---- Outputs are identical: one <species>.RData per species in out_optim (+ plot data).    ---- ####
-#### ---- Usage: Rscript modskurt_analysis_singlenode.R [n_cores] [species-id file]              ---- ####
-#### ----   n_cores          default 120 (one worker per species; each fit is single-threaded)   ---- ####
-#### ----   species-id file  optional, one id per line (e.g. spID.txt / spID_pooledEAus.txt);   ---- ####
-#### ----                    default = all species. Already-finished species are skipped, so    ---- ####
-#### ----                    an interrupted run can simply be restarted.                        ---- ####
+#### ---- Meant to be run interactively: set n_cores and the species range (sp_from, sp_to)     ---- ####
+#### ---- below. Already-finished species are skipped, so a run can simply be restarted.        ---- ####
 require(dplyr)
 require(cmdstanr)
 require(modskurt1)
@@ -16,8 +13,7 @@ require(modskurt1)
 require(foreach, quietly=T)
 require(doMC, quietly=T)
 source("config.R")
-args    <- commandArgs(trailingOnly = TRUE)
-n_cores <- if (length(args) >= 1) as.integer(args[1]) else 120L
+n_cores <- 120                       # one worker per species; each fit is single-threaded
 registerDoMC(cores = n_cores)
 
 # load data -- two alternatives:
@@ -52,6 +48,10 @@ save.plot.data <- TRUE
 plot <- FALSE
 # set the minumum number of years in a timeseries to proceed
 nyrs <- 4
+# species range to run (indices into species.id, in the order of distinct(sp.df, SPECIES));
+# NA = up to the last species
+sp_from <- 1
+sp_to   <- NA
 
 # RUN SCOPE (keeps the original "all or a subset of ecoregions" flexibility):
 #   run_ecoregions <- NULL          -> ALL ecoregions (full re-run; splits auto-applied).
@@ -102,9 +102,8 @@ if(resp.var=="density") {
 
 }
 
-# species to run: all, or the ids listed in the optional file (one per line); skip the ones
-# whose output file already exists (restartable)
-sp.ids <- if (length(args) >= 2) as.integer(readLines(args[2])) else seq_len(nrow(species.id))
+# species to run: sp_from..sp_to, skipping those whose output file already exists (restartable)
+sp.ids <- seq(sp_from, if (is.na(sp_to)) nrow(species.id) else sp_to)
 done   <- file.exists(file.path(out_optim, paste0(species.id$SPECIES[sp.ids], ".RData")))
 sp.ids <- sp.ids[!done]
 cat("species to run:", length(sp.ids), "(", sum(done), "already done ) on", n_cores, "cores
