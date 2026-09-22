@@ -4,7 +4,6 @@
 my_container=${HOME}/containers
 my_scripts=${HOME}/workspace/MPA_Timeseries
 my_indices=${HOME}/data/Modskurt   # must match config.R dir_data
-my_ids=${my_indices}/spID.txt   # species-id list (spID_pooledEAus.txt for the pooled sensitivity)
 while IFS=$'\t' read P1 
 
 do
@@ -27,4 +26,4 @@ echo "JobID = ${JOB} for parameters: ${P1}"
 #submitted on `date`"
 #echo SLURM_JOB_NODELIST is $SLURM_JOB_NODELIST
 
-done < ${my_ids}
+done < ${my_indices}/spID.txt
