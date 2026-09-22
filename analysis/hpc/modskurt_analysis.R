@@ -10,8 +10,19 @@ require(doMC, quietly=T)
 source("config.R")
 registerDoMC(cores=5)
 
-# load data
+# load data -- two alternatives:
+# 1) MAIN ANALYSIS, one population per species x ecoregion (with the split_plan sub-regions):
 load(input_file("sp.df.RData"))
+# 2) SENSITIVITY "pooled East Australia": species with sites in >= 2 adjacent ecoregions of
+#    the Torres Strait -> Bassian (eastern group) coast, relabelled to ONE ecoregion so the
+#    optimum is fit over the whole 29-degree gradient (co-author query on the ecoregion split).
+#    Uncomment the two lines below instead of 1); keep run_ecoregions <- NULL (a Bassian/Hawaii
+#    subset would empty the pooled data); the split_plan block below then matches nothing and
+#    leaves SPECIES unchanged. ALSO switch the output folders (out_optim / out_plot below) to
+#    the _pooledEAus alternatives, or the main outputs are overwritten, and point modskurt1.sh
+#    at spID_pooledEAus.txt (1..624) in its last line ("done < ...") -- do not overwrite spID.txt.
+#load(input_file("sp.df.pooled.EAus.RData"))
+#sp.df <- sp.df.pooled.EAus
 #load(input_file("species.id.RData"))
 
 # ---- Apply the ecoregion sub-regions from split_plan --------------------------------
@@ -57,8 +68,10 @@ sp.df <- sp.df |>
 # (e.g. -> ModskurtOptimEcoreg_Abund / _Density) so abund and density don't collide,
 # since both runs write to the same fixed folder.
 modskurt_dir <- dir_data
-out_optim <- file.path(modskurt_dir, "ModskurtOptimEcoreg")
+out_optim <- file.path(modskurt_dir, "ModskurtOptimEcoreg")          # 1) main analysis
 out_plot  <- file.path(modskurt_dir, "ModskurtOptimEcoregPlot")
+#out_optim <- file.path(modskurt_dir, "ModskurtOptimEcoreg_pooledEAus")     # 2) pooled sensitivity
+#out_plot  <- file.path(modskurt_dir, "ModskurtOptimEcoregPlot_pooledEAus")
                    
 
 species.id <- sp.df |> distinct(SPECIES) 
