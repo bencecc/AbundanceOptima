@@ -73,7 +73,6 @@ out_plot  <- file.path(modskurt_dir, "ModskurtOptimEcoregPlot")
 #out_optim <- file.path(modskurt_dir, "ModskurtOptimEcoreg_pooled")     # 2) pooled-coasts sensitivity
 #out_plot  <- file.path(modskurt_dir, "ModskurtOptimEcoregPlot_pooled")
                    
-
 species.id <- sp.df |> distinct(SPECIES) 
 
 # generate and set output directory (per sub-region; see out_optim/out_plot above)
