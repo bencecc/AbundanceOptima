@@ -106,16 +106,14 @@ if(resp.var=="density") {
 sp.ids <- seq(sp_from, if (is.na(sp_to)) nrow(species.id) else sp_to)
 done   <- file.exists(file.path(out_optim, paste0(species.id$SPECIES[sp.ids], ".RData")))
 sp.ids <- sp.ids[!done]
-cat("species to run:", length(sp.ids), "(", sum(done), "already done ) on", n_cores, "cores
-")
+cat("species to run:", length(sp.ids), "(", sum(done), "already done ) on", n_cores, "cores\n")
 
 # ---- OUTER PARALLEL LOOP over species (each worker writes its own files; errors in one
 # species are recorded and do not stop the others) ----------------------------------------
 run_log <- foreach(sp.id = sp.ids, .errorhandling = "pass") %dopar% {
 
 sp.name <- species.id$SPECIES[sp.id]
-cat(sp.id, sp.name, "
-")
+cat(sp.id, sp.name, "\n")
 
 test.dat <- sp.df |> filter(SPECIES%in%species.id$SPECIES[sp.id])
 
@@ -257,8 +255,6 @@ sp.name   # value returned to run_log
 
 # report species whose worker raised an error (run_log holds the error object for them)
 errs <- sapply(run_log, function(x) inherits(x, "error"))
-cat("finished:", sum(!errs), "species ok,", sum(errs), "with errors
-")
-if (any(errs)) for (k in which(errs)) cat("  species id", sp.ids[k], ":", conditionMessage(run_log[[k]]), "
-")
+cat("finished:", sum(!errs), "species ok,", sum(errs), "with errors\n")
+if (any(errs)) for (k in which(errs)) cat("  species id", sp.ids[k], ":", conditionMessage(run_log[[k]]), "\n")
 
